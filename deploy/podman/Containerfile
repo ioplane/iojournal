@@ -1,0 +1,158 @@
+FROM oraclelinux:10
+
+LABEL maintainer="iojournal development team"
+LABEL description="Development environment for iojournal — C23 logging library"
+
+# Build arguments for tool versions
+ARG CMAKE_VERSION=4.2.3
+ARG CLANG_VERSION=22.1.0
+ARG DOXYGEN_VERSION=1.16.1
+ARG UNITY_VERSION=2.6.1
+ARG LIBURING_VERSION=2.8
+ARG WOLFSSL_VERSION=5.7.0
+ARG CPPCHECK_REPO=https://github.com/danmar/cppcheck.git
+
+# Enable CodeReady Builder repo (for -devel packages not in baseos/appstream)
+RUN dnf install -y oraclelinux-developer-release-el10 && \
+    dnf config-manager --set-enabled ol10_codeready_builder && \
+    dnf clean all
+
+# Install base development tools
+RUN dnf install -y \
+    gcc \
+    gcc-c++ \
+    make \
+    autoconf \
+    automake \
+    libtool \
+    pkgconfig \
+    openssl-devel \
+    git \
+    vim \
+    gdb \
+    valgrind \
+    strace \
+    wget \
+    curl \
+    jq \
+    tar \
+    xz \
+    bzip2 \
+    patch \
+    flex \
+    bison \
+    python3 \
+    python3-pip \
+    && dnf clean all
+
+# Compilers (from source / pre-built)
+# ═══════════════════════════════════════════════════════
+
+# Install Clang 22.1.0 from pre-built release binary
+RUN cd /tmp && \
+    curl -fsSL -o llvm.tar.xz \
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-${CLANG_VERSION}/LLVM-${CLANG_VERSION}-Linux-X64.tar.xz && \
+    tar xJf llvm.tar.xz && \
+    LLVM_DIR=LLVM-${CLANG_VERSION}-Linux-X64 && \
+    CLANG_MAJOR=$(echo ${CLANG_VERSION} | cut -d. -f1) && \
+    for tool in clang clang++ clang-cl clang-cpp clang-${CLANG_MAJOR} \
+                clang-format clang-tidy clang-apply-replacements \
+                clang-rename clang-check \
+                lld ld.lld ld64.lld wasm-ld \
+                llvm-ar llvm-nm llvm-objdump llvm-ranlib llvm-strip \
+                llvm-symbolizer llvm-profdata llvm-cov llvm-objcopy \
+                llvm-readelf llvm-size llvm-strings llvm-addr2line \
+                scan-build scan-view; do \
+        [ -e "$LLVM_DIR/bin/$tool" ] && cp -a "$LLVM_DIR/bin/$tool" /usr/local/bin/; \
+    done && \
+    cp -a $LLVM_DIR/lib/clang /usr/local/lib/ && \
+    rm -rf /tmp/LLVM-* /tmp/llvm.tar.xz && \
+    ldconfig
+
+# Install GCC 15 from gcc-toolset-15
+RUN dnf install -y \
+        gcc-toolset-15-gcc \
+        gcc-toolset-15-gcc-c++ \
+        gcc-toolset-15-libatomic-devel \
+        gcc-toolset-15-libasan-devel \
+        gcc-toolset-15-libubsan-devel \
+        gcc-toolset-15-libtsan-devel \
+        gcc-toolset-15-binutils \
+    && dnf clean all && \
+    ln -sf /opt/rh/gcc-toolset-15/root/usr/bin/gcc /usr/local/bin/gcc-15 && \
+    ln -sf /opt/rh/gcc-toolset-15/root/usr/bin/g++ /usr/local/bin/g++-15
+
+# Build tools & quality checkers
+RUN pip3 install ninja flawfinder gcovr codechecker
+
+RUN ln -sf /usr/local/bin/CodeChecker /usr/local/bin/codechecker 2>/dev/null || true
+
+# CMake
+RUN cd /tmp && \
+    wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.tar.gz && \
+    tar xzf cmake-${CMAKE_VERSION}.tar.gz && \
+    cd cmake-${CMAKE_VERSION} && \
+    ./bootstrap --prefix=/usr/local --parallel=$(nproc) && \
+    make -j$(nproc) && \
+    make install && \
+    cd /tmp && rm -rf cmake-*
+
+# cppcheck (build from upstream source because Oracle Linux 10 repos do not ship it)
+RUN cd /tmp && \
+    git clone --depth 1 ${CPPCHECK_REPO} cppcheck && \
+    cmake -S cppcheck -B cppcheck/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr/local && \
+    cmake --build cppcheck/build -j"$(nproc)" && \
+    cmake --install cppcheck/build && \
+    cd /tmp && rm -rf cppcheck
+
+# Unity testing framework
+RUN cd /tmp && \
+    wget https://github.com/ThrowTheSwitch/Unity/archive/refs/tags/v${UNITY_VERSION}.tar.gz && \
+    tar xzf v${UNITY_VERSION}.tar.gz && \
+    cd Unity-${UNITY_VERSION} && \
+    mkdir -p /usr/local/include/unity && \
+    mkdir -p /usr/local/src/unity && \
+    cp src/unity.h src/unity_internals.h /usr/local/include/unity/ && \
+    cp src/unity.c /usr/local/src/unity/ && \
+    cd /tmp && rm -rf Unity-* v${UNITY_VERSION}.tar.gz
+
+# ═══════════════════════════════════════════════════════
+# Project Dependencies (liburing, wolfssl)
+# ═══════════════════════════════════════════════════════
+
+# liburing
+RUN cd /tmp && \
+    wget https://github.com/axboe/liburing/archive/refs/tags/liburing-${LIBURING_VERSION}.tar.gz && \
+    tar xzf liburing-${LIBURING_VERSION}.tar.gz && \
+    cd liburing-liburing-${LIBURING_VERSION} && \
+    ./configure --prefix=/usr/local && \
+    make -j$(nproc) && \
+    make install && \
+    cd /tmp && rm -rf liburing-*
+
+# wolfSSL
+RUN cd /tmp && \
+    wget https://github.com/wolfSSL/wolfssl/archive/refs/tags/v${WOLFSSL_VERSION}-stable.tar.gz && \
+    tar xzf v${WOLFSSL_VERSION}-stable.tar.gz && \
+    cd wolfssl-${WOLFSSL_VERSION}-stable && \
+    ./autogen.sh && \
+    ./configure --prefix=/usr/local --enable-all && \
+    make -j$(nproc) && \
+    make install && \
+    cd /tmp && rm -rf wolfssl-* v${WOLFSSL_VERSION}*
+
+# ═══════════════════════════════════════════════════════
+# Static Analysis
+# ═══════════════════════════════════════════════════════
+
+# PVS-Studio (license loaded at runtime through environment variables)
+RUN wget -qO /etc/yum.repos.d/viva64.repo https://cdn.pvs-studio.ru/etc/viva64.repo && \
+    dnf install -y pvs-studio && \
+    dnf clean all
+
+# Update ldconfig cache
+RUN ldconfig
+
+CMD ["/bin/bash"]

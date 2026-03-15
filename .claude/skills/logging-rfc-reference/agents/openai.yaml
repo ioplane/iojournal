@@ -1,0 +1,4 @@
+interface:
+  display_name: "Logging RFC Reference"
+  short_description: "RFC rules for logging formats"
+  default_prompt: "Use $logging-rfc-reference when work depends on syslog, OTLP, NDJSON, or logging security standards."

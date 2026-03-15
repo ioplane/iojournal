@@ -1,0 +1,4 @@
+interface:
+  display_name: "iojournal Architecture"
+  short_description: "Architecture rules for iojournal"
+  default_prompt: "Use $iojournal-architecture to guide architecture-sensitive work in iojournal."

@@ -1,0 +1,75 @@
+# clang-tidy configuration for iojournal
+# C23 logging library analysis baseline
+
+---
+Checks: >
+  clang-diagnostic-*,
+  clang-analyzer-*,
+  clang-analyzer-security.*,
+  clang-analyzer-unix.*,
+  clang-analyzer-deadcode.*,
+  clang-analyzer-core.*,
+  bugprone-*,
+  cert-*,
+  concurrency-*,
+  misc-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -bugprone-easily-swappable-parameters,
+  -cert-dcl37-c,
+  -cert-dcl51-cpp,
+  -modernize-use-trailing-return-type,
+  -readability-function-cognitive-complexity,
+  -readability-identifier-length,
+  -readability-magic-numbers,
+  -misc-no-recursion
+
+WarningsAsErrors: >
+  clang-analyzer-security.*,
+  clang-analyzer-core.NullDereference,
+  clang-analyzer-core.UndefinedBinaryOperatorResult,
+  clang-analyzer-unix.Malloc,
+  clang-analyzer-unix.MallocSizeof,
+  bugprone-use-after-move,
+  bugprone-double-free,
+  bugprone-sizeof-expression,
+  bugprone-string-constructor,
+  bugprone-suspicious-memory-comparison,
+  bugprone-signal-handler,
+  cert-err34-c,
+  cert-msc30-c,
+  cert-msc50-cpp
+
+HeaderFilterRegex: '(include|src)/.*'
+FormatStyle: file
+
+CheckOptions:
+  - key: readability-identifier-naming.FunctionCase
+    value: lower_case
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: readability-identifier-naming.ParameterCase
+    value: lower_case
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.EnumConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.StructCase
+    value: lower_case
+  - key: readability-identifier-naming.TypedefSuffix
+    value: _t
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: UPPER_CASE
+  - key: readability-braces-around-statements.ShortStatementLines
+    value: '0'
+  - key: readability-function-size.LineThreshold
+    value: '220'
+  - key: readability-function-size.StatementThreshold
+    value: '120'
+  - key: readability-function-size.ParameterThreshold
+    value: '8'
+  - key: readability-function-size.NestingThreshold
+    value: '6'
+  - key: bugprone-sizeof-expression.WarnOnSizeOfPointer
+    value: '1'

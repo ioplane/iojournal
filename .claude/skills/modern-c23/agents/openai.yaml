@@ -1,0 +1,4 @@
+interface:
+  display_name: "Modern C23"
+  short_description: "Approved C23 patterns for iojournal"
+  default_prompt: "Use $modern-c23 to apply approved C23 features and constraints in iojournal."

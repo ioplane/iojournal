@@ -1,0 +1,57 @@
+# Doxyfile for iojournal
+# Public API documentation configuration
+
+DOXYFILE_ENCODING      = UTF-8
+PROJECT_NAME           = "iojournal"
+PROJECT_NUMBER         = ""
+PROJECT_BRIEF          = "Bounded logging library for C23"
+OUTPUT_DIRECTORY       = docs/api
+CREATE_SUBDIRS         = NO
+ALLOW_UNICODE_NAMES    = NO
+OUTPUT_LANGUAGE        = English
+OPTIMIZE_OUTPUT_FOR_C  = YES
+MARKDOWN_SUPPORT       = YES
+TOC_INCLUDE_HEADINGS   = 5
+AUTOLINK_SUPPORT       = YES
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+RESOLVE_UNNAMED_PARAMS = YES
+
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_AS_ERROR          = NO
+WARN_FORMAT            = "$file:$line: $text"
+
+INPUT                  = include/ \
+                         docs/api/README.md \
+                         docs/en/03-syslog-contract.md
+FILE_PATTERNS          = *.h \
+                         *.md
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */tests/* \
+                         */build/* \
+                         */docs/tmp/* \
+                         */.git/* \
+                         */.worktrees/*
+EXAMPLE_PATH           = examples/
+EXAMPLE_PATTERNS       = *.c
+USE_MDFILE_AS_MAINPAGE = docs/api/README.md
+
+SOURCE_BROWSER         = YES
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+REFERENCES_LINK_SOURCE = YES
+
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_FILE_EXTENSION    = .html
+HTML_COLORSTYLE        = AUTO_LIGHT
+HTML_DYNAMIC_MENUS     = YES
+HTML_CODE_FOLDING      = YES
+HTML_COPY_CLIPBOARD    = YES
+GENERATE_TREEVIEW      = YES
+SEARCHENGINE           = YES

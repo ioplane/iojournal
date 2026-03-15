@@ -1,0 +1,30 @@
+name: Release Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build dev image
+        run: docker build -t iojournal-dev:ci -f deploy/podman/Containerfile .
+
+      - name: Run release gate
+        run: |
+          docker run --rm \
+            -v "$PWD:/workspace" \
+            -w /workspace \
+            iojournal-dev:ci \
+            bash scripts/run-release-gate.sh

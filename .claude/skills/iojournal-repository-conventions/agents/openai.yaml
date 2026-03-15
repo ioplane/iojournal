@@ -1,0 +1,4 @@
+interface:
+  display_name: "iojournal Repository Conventions"
+  short_description: "Repo layout and release conventions"
+  default_prompt: "Use $iojournal-repository-conventions for repository structure, docs, and release conventions in iojournal."

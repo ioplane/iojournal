@@ -1,0 +1,4 @@
+interface:
+  display_name: "iojournal Coding Standards"
+  short_description: "C coding rules for iojournal"
+  default_prompt: "Use $iojournal-coding-standards to apply iojournal C coding rules."
