@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** take `iojournal` from repository bootstrap to the first public `v0.1.0-rc.1`.
+**Goal:** take `iojournal` from repository bootstrap to the first public `v0.1.0-rc.1` with mandatory feature, functional-comparison, performance-comparison, and optimization evidence.
 
-**Architecture:** execute a protocol-first program. Standards and contracts land before core runtime work; runtime work lands before persistence and syslog delivery; release evidence lands only after runnable features exist.
+**Architecture:** execute a protocol-first program. Standards and contracts land before core runtime work; runtime work lands before persistence and syslog delivery; release infrastructure lands before benchmark methodology; benchmark methodology lands before competitor comparison; competitor comparison lands before the bottleneck and optimization sprint; publish evidence lands only after runnable features, comparison evidence, and optimization evidence exist.
 
 **Tech Stack:** Markdown planning docs, local RFC mirror, Bash/Python repository scripts, future C23/CMake implementation surface, GitHub Actions bootstrap.
 
@@ -21,7 +21,35 @@
 | 05 | core runtime MVP, JSON console sink, unit-test skeleton | runnable core build |
 | 06 | NDJSON file sink, rotation/retention baseline | local persistence build |
 | 07 | RFC 5424 formatter, RFC 5426/6587 sinks, interoperability fixtures | syslog-capable RC candidate |
-| 08 | examples, release evidence, packaging, RC checklist | `v0.1.0-rc.1` publish decision |
+| 08 | release scripts, examples, packaging, RC checklist scaffolding | RC infrastructure ready |
+| 09 | benchmark harness, profiling stack, methodology, raw artifact flow | benchmark-comparison harness ready |
+| 10 | Tier 1 functional and performance comparison, Tier 2 appendix | comparison evidence pack under `docs/plans/comparison/` |
+| 11A | bottleneck inventory, `io_uring` relevance and adoption decision, SIMD relevance and adoption decision, refreshed comparison evidence | optimization evidence pack |
+| 11B | event-copy and allocation-churn optimization, refreshed benchmark and profiler evidence | allocation-optimization evidence pack |
+| 11C | structural hot-path redesign, refreshed benchmark and profiler evidence | structural-optimization evidence pack |
+| 11D | contract-preserving fast paths, refreshed benchmark and profiler evidence | fast-path optimization evidence pack |
+| 12 | final publish criteria, evidence review, tag/release prep | `v0.1.0-rc.1` publish decision |
+
+## Current Program Status
+
+- Sprint 01 through Sprint 11C are complete.
+- Sprint 11D is complete and active. The optimization evidence pack is:
+  - local benchmark run [`20260316-210134`](/opt/projects/repositories/iojournal/docs/tmp/benchmarks/20260316-210134)
+  - Tier 1 benchmark run [`20260316-150320`](/opt/projects/repositories/iojournal/docs/tmp/benchmarks/20260316-150320)
+  - callgrind and repeatability pack [`20260316-210204`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210204)
+  - `uftrace` companion runs [`20260316-210329`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210329), [`20260316-210345`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210345), and [`20260316-210349`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210349)
+- Sprint 12 publication is now the release-gate sprint.
+- The current explicit publication decision remains `NO-PUBLISH`; see [`docs/en/06-rc1-publish-decision.md`](/opt/projects/repositories/iojournal/docs/en/06-rc1-publish-decision.md).
+
+## Sprint 10 Evidence Pack
+
+| Artifact | Role | Release Status |
+|---|---|---|
+| `docs/plans/comparison/TIER1_FUNCTIONAL_MATRIX.md` | normalized Tier 1 capability matrix | required |
+| `docs/plans/comparison/IOHTTP_IOGUARD_FIT_MATRIX.md` | consumer-fit decision view for `iohttp` and `ioguard` | required |
+| `docs/plans/comparison/TIER2_APPENDIX.md` | reference-only ecosystem context | required |
+| `docs/plans/comparison/PERFORMANCE_RESULTS.md` | normalized shared and capability-specific results | required |
+| `docs/plans/comparison/RAW_ARTIFACTS.md` | benchmark and profiling artifact registry | required |
 
 ## Standards Matrix
 
@@ -37,6 +65,7 @@
 | Elastic Common Schema | field naming guidance | SHOULD | 02 | partial |
 | OpenTelemetry log model | future exporter/trace alignment | SHOULD | 02 | partial |
 | RFC 5425 | syslog over TLS | MAY for RC, deferred | 02 | no |
+| `zlog_alternative.md` | C logging ecosystem shortlist and suitability hints | MUST for comparison program | 09 | yes |
 
 ## RFC Handoff Matrix
 
@@ -52,6 +81,7 @@
 | Elastic Common Schema | `docs/rfc/SOURCES.md`, `docs/rfc/PRIORITY.md` | decide minimum field naming subset | 03 | partial |
 | OpenTelemetry log model | `docs/rfc/SOURCES.md`, `docs/rfc/PRIORITY.md` | decide alignment boundaries only | 03 | partial |
 | RFC 5425 | `docs/rfc/registry.md`, `docs/rfc/SOURCES.md`, `docs/rfc/PRIORITY.md` | record as deferred transport-security work | post-RC | deferred |
+| `docs/tmp/draft/zlog_alternative.md` | research input only | freeze Tier 1 and Tier 2 comparison sets | 09 | required as research input |
 
 ## RC Non-Goal Freeze
 
@@ -96,7 +126,7 @@ Expected decisions:
 
 - [ ] **Step 3: Freeze sprint sequencing**
 
-Expected: eight named sprints with explicit dependencies.
+Expected: eleven named sprints with explicit dependencies.
 
 ## Chunk 2: Sprint Execution Handoff
 
@@ -112,6 +142,9 @@ Expected: eight named sprints with explicit dependencies.
 - Modify: `docs/plans/sprints/2026-03-14-sprint-06-file-sink-and-persistence.md`
 - Modify: `docs/plans/sprints/2026-03-14-sprint-07-syslog-protocol-delivery.md`
 - Modify: `docs/plans/sprints/2026-03-14-sprint-08-release-candidate-hardening.md`
+- Create: `docs/plans/sprints/2026-03-16-sprint-09-benchmark-harness-and-methodology.md`
+- Create: `docs/plans/sprints/2026-03-16-sprint-10-functional-and-performance-comparison.md`
+- Create: `docs/plans/sprints/2026-03-16-sprint-11-final-rc-decision-and-publication.md`
 
 - [ ] **Step 1: Keep each sprint isolated**
 
@@ -123,11 +156,11 @@ Expected: sprint plans point back to roadmap/master plan for scope and dependenc
 
 - [ ] **Step 3: Keep post-RC work out of sprint execution**
 
-Expected: backlog items do not leak into the eight RC sprints.
+Expected: backlog items do not leak into the eleven RC sprints.
 
 ## Execution Notes
 
 - Execute Sprint 01 and Sprint 02 before starting any feature code.
 - Treat Sprint 03 and Sprint 04 as contract freeze gates.
-- Do not claim RC readiness before Sprint 08 verification evidence exists.
-- Do not promote backlog items into Sprint 05-08 unless the roadmap and standards matrices are intentionally revised first.
+- Do not claim RC readiness before Sprint 11 verification evidence exists.
+- Do not promote backlog items into Sprint 05-11 unless the roadmap and standards matrices are intentionally revised first.

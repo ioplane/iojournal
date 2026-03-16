@@ -12,6 +12,8 @@ Repository-local skills now live in folder-based form under `.claude/skills/<ski
   - syslog, OTLP, NDJSON, timestamp, and redaction standards
 - `modern-c23/`
   - approved C23 features and constraints for `iojournal`
+- `iojournal-performance-optimization/`
+  - benchmark, profiler, perf-lane, SIMD, and release-blocking optimization workflow
 - `iojournal-repository-conventions/`
   - repository layout, docs, contributor, and release conventions
 

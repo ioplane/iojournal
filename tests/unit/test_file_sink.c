@@ -62,6 +62,10 @@ static ij_logger_config_t ij_test_file_config(const char *path)
         .queue_capacity = IJ_QUEUE_CAPACITY_DEFAULT,
         .logger_name = "tests.file_sink",
         .file_path = path,
+        .file_rotate_bytes = IJ_FILE_ROTATE_BYTES_OFF,
+        .file_rotate_interval_seconds = IJ_FILE_ROTATE_INTERVAL_OFF,
+        .file_retention_files = IJ_FILE_RETENTION_OFF,
+        .file_backend = IJ_FILE_BACKEND_AUTO,
         .syslog_host = NULL,
         .syslog_port = 0U,
         .syslog_transport = IJ_SYSLOG_TRANSPORT_UDP,
@@ -113,6 +117,19 @@ void test_file_sink_writes_append_only_ndjson_output(void)
 {
     char path[128];
     char file_data[2048];
+    const char *expected_output =
+        "{\"timestamp\":\"1970-01-01T00:00:00.123Z\","
+        "\"level\":\"info\","
+        "\"event_name\":\"file.first\","
+        "\"message\":\"first line\","
+        "\"logger\":\"tests.file_sink\","
+        "\"attributes\":{\"request_id\":\"req-file-42\",\"auth.token\":\"[REDACTED]\"}}\n"
+        "{\"timestamp\":\"1970-01-01T00:00:00.123Z\","
+        "\"level\":\"info\","
+        "\"event_name\":\"file.second\","
+        "\"message\":\"second line\","
+        "\"logger\":\"tests.file_sink\","
+        "\"attributes\":{\"request_id\":\"req-file-42\",\"auth.token\":\"[REDACTED]\"}}\n";
     ij_logger_t *logger = NULL;
     ij_logger_config_t config;
     ij_event_t first_event;
@@ -130,9 +147,7 @@ void test_file_sink_writes_append_only_ndjson_output(void)
     TEST_ASSERT_EQUAL_INT(IJ_STATUS_OK, ij_logger_shutdown(logger));
 
     ij_read_file(path, file_data, sizeof(file_data));
-    TEST_ASSERT_NOT_NULL(strstr(file_data, "\"event_name\":\"file.first\""));
-    TEST_ASSERT_NOT_NULL(strstr(file_data, "\"event_name\":\"file.second\""));
-    TEST_ASSERT_NOT_NULL(strstr(file_data, "\"auth.token\":\"[REDACTED]\""));
+    TEST_ASSERT_EQUAL_STRING(expected_output, file_data);
     {
         const char *last_newline = strrchr(file_data, '\n');
 

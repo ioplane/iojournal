@@ -2,65 +2,129 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILD_DIR="${ROOT_DIR}/build/clang-coverage"
-REPORT_DIR="${BUILD_DIR}/coverage"
-PROFILE_DIR="${BUILD_DIR}/profiles"
+COVERAGE_TOOLCHAIN="${COVERAGE_TOOLCHAIN:-all}"
+CLANG_BUILD_DIR="${ROOT_DIR}/build/clang-coverage"
+CLANG_REPORT_DIR="${CLANG_BUILD_DIR}/coverage"
+CLANG_PROFILE_DIR="${CLANG_BUILD_DIR}/profiles"
+GCC_BUILD_DIR="${ROOT_DIR}/build/gcc-coverage"
+GCC_REPORT_DIR="${GCC_BUILD_DIR}/coverage"
 
-mkdir -p "${REPORT_DIR}"
+mkdir -p "${CLANG_REPORT_DIR}" "${GCC_REPORT_DIR}"
 
 if [[ ! -f "${ROOT_DIR}/CMakeLists.txt" || ! -f "${ROOT_DIR}/CMakePresets.json" ]]; then
-    printf "SKIP: coverage unavailable until the CMake project is initialized\n" > "${REPORT_DIR}/coverage.txt"
-    printf "TN:\n" > "${REPORT_DIR}/coverage.lcov"
-    chmod 0644 "${REPORT_DIR}/coverage.lcov" "${REPORT_DIR}/coverage.txt"
-    cat "${REPORT_DIR}/coverage.txt"
+    printf "SKIP: coverage unavailable until the CMake project is initialized\n" > "${CLANG_REPORT_DIR}/coverage.txt"
+    printf "TN:\n" > "${CLANG_REPORT_DIR}/coverage.lcov"
+    printf "SKIP: coverage unavailable until the CMake project is initialized\n" > "${GCC_REPORT_DIR}/coverage.txt"
+    printf "TN:\n" > "${GCC_REPORT_DIR}/coverage.lcov"
+    chmod 0644 \
+        "${CLANG_REPORT_DIR}/coverage.lcov" \
+        "${CLANG_REPORT_DIR}/coverage.txt" \
+        "${GCC_REPORT_DIR}/coverage.lcov" \
+        "${GCC_REPORT_DIR}/coverage.txt"
+    cat "${CLANG_REPORT_DIR}/coverage.txt"
     exit 0
 fi
 
-cmake --preset clang-coverage
-cmake --build "${BUILD_DIR}" -j"$(nproc)"
+run_clang_coverage() {
+    local ignore_regex
+    local object_args=()
+    local coverage_objects
 
-rm -rf "${PROFILE_DIR}"
-mkdir -p "${PROFILE_DIR}"
+    cmake --preset clang-coverage
+    cmake --build "${CLANG_BUILD_DIR}" -j"$(nproc)"
 
-LLVM_PROFILE_FILE="${PROFILE_DIR}/%p.profraw" \
-  ctest --test-dir "${BUILD_DIR}" --output-on-failure
+    rm -rf "${CLANG_PROFILE_DIR}"
+    mkdir -p "${CLANG_PROFILE_DIR}"
 
-llvm-profdata merge \
-  -sparse \
-  "${PROFILE_DIR}"/*.profraw \
-  -o "${REPORT_DIR}/coverage.profdata"
+    LLVM_PROFILE_FILE="${CLANG_PROFILE_DIR}/%p.profraw" \
+      ctest --test-dir "${CLANG_BUILD_DIR}" --output-on-failure
 
-mapfile -t COVERAGE_OBJECTS < <(find "${BUILD_DIR}" -maxdepth 1 -type f -perm -111 -name 'test_*' | sort)
+    llvm-profdata merge \
+      -sparse \
+      "${CLANG_PROFILE_DIR}"/*.profraw \
+      -o "${CLANG_REPORT_DIR}/coverage.profdata"
 
-if [[ ${#COVERAGE_OBJECTS[@]} -eq 0 ]]; then
-  printf "SKIP: no test coverage objects found in %s\n" "${BUILD_DIR}" > "${REPORT_DIR}/coverage.txt"
-  printf "TN:\n" > "${REPORT_DIR}/coverage.lcov"
-  chmod 0644 "${REPORT_DIR}/coverage.lcov" "${REPORT_DIR}/coverage.txt"
-  cat "${REPORT_DIR}/coverage.txt"
-  exit 0
-fi
+    mapfile -t coverage_objects < <(find "${CLANG_BUILD_DIR}" -type f -perm -111 -name 'test_*' | sort)
 
-LLVM_COV_OBJECT_ARGS=()
-for obj in "${COVERAGE_OBJECTS[@]:1}"; do
-  LLVM_COV_OBJECT_ARGS+=("-object=${obj}")
-done
+    if [[ ${#coverage_objects[@]} -eq 0 ]]; then
+      printf "SKIP: no test coverage objects found in %s\n" "${CLANG_BUILD_DIR}" > "${CLANG_REPORT_DIR}/coverage.txt"
+      printf "TN:\n" > "${CLANG_REPORT_DIR}/coverage.lcov"
+      chmod 0644 "${CLANG_REPORT_DIR}/coverage.lcov" "${CLANG_REPORT_DIR}/coverage.txt"
+      cat "${CLANG_REPORT_DIR}/coverage.txt"
+      return 0
+    fi
 
-IGNORE_REGEX='(.*/tests/.*|.*/tests/third_party/.*|.*/usr/local/src/unity/.*)'
+    for obj in "${coverage_objects[@]:1}"; do
+      object_args+=("-object=${obj}")
+    done
 
-llvm-cov export \
-  -format=lcov \
-  "${COVERAGE_OBJECTS[0]}" \
-  "${LLVM_COV_OBJECT_ARGS[@]}" \
-  -instr-profile="${REPORT_DIR}/coverage.profdata" \
-  -ignore-filename-regex="${IGNORE_REGEX}" \
-  > "${REPORT_DIR}/coverage.lcov"
+    ignore_regex='(.*/tests/.*|.*/tests/third_party/.*|.*/usr/local/src/unity/.*)'
 
-llvm-cov report \
-  "${COVERAGE_OBJECTS[0]}" \
-  "${LLVM_COV_OBJECT_ARGS[@]}" \
-  -instr-profile="${REPORT_DIR}/coverage.profdata" \
-  -ignore-filename-regex="${IGNORE_REGEX}" \
-  > "${REPORT_DIR}/coverage.txt"
+    llvm-cov export \
+      -format=lcov \
+      "${coverage_objects[0]}" \
+      "${object_args[@]}" \
+      -instr-profile="${CLANG_REPORT_DIR}/coverage.profdata" \
+      -ignore-filename-regex="${ignore_regex}" \
+      > "${CLANG_REPORT_DIR}/coverage.lcov"
 
-cat "${REPORT_DIR}/coverage.txt"
-chmod 0644 "${REPORT_DIR}/coverage.lcov" "${REPORT_DIR}/coverage.txt"
+    llvm-cov report \
+      "${coverage_objects[0]}" \
+      "${object_args[@]}" \
+      -instr-profile="${CLANG_REPORT_DIR}/coverage.profdata" \
+      -ignore-filename-regex="${ignore_regex}" \
+      > "${CLANG_REPORT_DIR}/coverage.txt"
+
+    chmod 0644 "${CLANG_REPORT_DIR}/coverage.lcov" "${CLANG_REPORT_DIR}/coverage.txt"
+}
+
+run_gcc_coverage() {
+    if ! command -v gcovr >/dev/null 2>&1; then
+        printf "SKIP: gcovr is not available in the current environment\n" > "${GCC_REPORT_DIR}/coverage.txt"
+        printf "TN:\n" > "${GCC_REPORT_DIR}/coverage.lcov"
+        chmod 0644 "${GCC_REPORT_DIR}/coverage.lcov" "${GCC_REPORT_DIR}/coverage.txt"
+        cat "${GCC_REPORT_DIR}/coverage.txt"
+        return 0
+    fi
+
+    cmake --preset gcc-coverage
+    cmake --build "${GCC_BUILD_DIR}" -j"$(nproc)"
+    ctest --test-dir "${GCC_BUILD_DIR}" --output-on-failure
+
+    gcovr \
+        --root "${ROOT_DIR}" \
+        --filter "${ROOT_DIR}/src" \
+        --exclude "${ROOT_DIR}/tests/.*" \
+        --exclude "${ROOT_DIR}/tests/third_party/.*" \
+        --txt-summary \
+        --txt "${GCC_REPORT_DIR}/coverage.txt" \
+        --lcov "${GCC_REPORT_DIR}/coverage.lcov" \
+        --html-details "${GCC_REPORT_DIR}/coverage.html" \
+        "${GCC_BUILD_DIR}"
+
+    chmod 0644 "${GCC_REPORT_DIR}/coverage.lcov" "${GCC_REPORT_DIR}/coverage.txt" \
+        "${GCC_REPORT_DIR}/coverage.html"
+}
+
+case "${COVERAGE_TOOLCHAIN}" in
+clang)
+    run_clang_coverage
+    cat "${CLANG_REPORT_DIR}/coverage.txt"
+    ;;
+gcc)
+    run_gcc_coverage
+    cat "${GCC_REPORT_DIR}/coverage.txt"
+    ;;
+all)
+    run_clang_coverage
+    run_gcc_coverage
+    printf "\n--- clang coverage ---\n"
+    cat "${CLANG_REPORT_DIR}/coverage.txt"
+    printf "\n--- gcc coverage ---\n"
+    cat "${GCC_REPORT_DIR}/coverage.txt"
+    ;;
+*)
+    echo "unknown COVERAGE_TOOLCHAIN: ${COVERAGE_TOOLCHAIN}" >&2
+    exit 2
+    ;;
+esac

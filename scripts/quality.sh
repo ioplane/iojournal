@@ -14,7 +14,7 @@ PASS=0
 FAIL=0
 SKIP=0
 
-step() { printf "\n${CYAN}=== [%d/10] %s ===${NC}\n" "$1" "$2"; }
+step() { printf "\n${CYAN}=== [%d/11] %s ===${NC}\n" "$1" "$2"; }
 ok()   { printf "${GREEN}PASS${NC}: %s\n" "$1"; PASS=$((PASS + 1)); }
 fail() { printf "${RED}FAIL${NC}: %s\n" "$1"; FAIL=$((FAIL + 1)); }
 skip() { printf "${YELLOW}SKIP${NC}: %s\n" "$1"; SKIP=$((SKIP + 1)); }
@@ -57,7 +57,7 @@ else
 fi
 
 step 4 "Project bootstrap scripts"
-if [[ -f scripts/run-release-gate.sh && -f scripts/run-coverage.sh && -f scripts/build-release-assets.sh ]]; then
+if [[ -f scripts/run-release-gate.sh && -f scripts/run-coverage.sh && -f scripts/run-gcc-analyzer.sh && -f scripts/build-release-assets.sh ]]; then
     ok "Required bootstrap scripts present"
 else
     fail "Missing bootstrap scripts"
@@ -226,7 +226,23 @@ else
     skip "Compile database unavailable before CMake bootstrap"
 fi
 
-step 10 "CodeChecker"
+step 10 "GCC analyzer"
+if has_cmake_surface; then
+    if [[ -f scripts/run-gcc-analyzer.sh ]]; then
+        if bash scripts/run-gcc-analyzer.sh >/tmp/iojournal-gcc-analyzer.log 2>&1; then
+            ok "GCC analyzer lane clean"
+        else
+            cat /tmp/iojournal-gcc-analyzer.log
+            fail "GCC analyzer lane failed"
+        fi
+    else
+        fail "GCC analyzer script missing"
+    fi
+else
+    skip "Compile database unavailable before CMake bootstrap"
+fi
+
+step 11 "CodeChecker"
 if has_cmake_surface; then
     if [[ ! -f "${BUILD_DIR}/compile_commands.json" ]]; then
         fail "CodeChecker: compile database missing"

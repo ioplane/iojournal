@@ -20,6 +20,16 @@ Use this skill to choose C23 features deliberately instead of as novelty. Favor 
 - `<stdckdint.h>` for size arithmetic on untrusted or derived input
 - `__VA_OPT__` for clean logging macro fronts
 
+## SIMD And Low-Level Rules
+
+- C23 does not provide a standard SIMD API; use compiler intrinsics only in isolated translation units.
+- Keep scalar implementations as the canonical baseline for correctness and fallback.
+- For the current RC line:
+  - `x86_64`: `AVX2` is the only accepted active SIMD target
+  - `arm64`: `NEON` may exist as an implementation experiment but is not RC-active without direct measurement
+  - do not introduce `AVX-512`, `SVE`, or `SVE2` into the RC path
+- Prefer intrinsics over inline assembly for SIMD work.
+
 ## Use With Care
 
 - `_BitInt` only when exact bit width pays for its complexity and ABI remains controlled.

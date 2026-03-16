@@ -35,6 +35,12 @@ bool ij_redaction_mode_is_valid(ij_redaction_mode_t mode)
     return mode == IJ_REDACTION_MODE_DISABLED || mode == IJ_REDACTION_MODE_ENABLED;
 }
 
+bool ij_file_backend_is_valid(ij_file_backend_t backend)
+{
+    return backend == IJ_FILE_BACKEND_AUTO || backend == IJ_FILE_BACKEND_SYNC ||
+           backend == IJ_FILE_BACKEND_IO_URING;
+}
+
 static bool ij_is_power_of_two(size_t value)
 {
     return value != 0U && (value & (value - 1U)) == 0U;
@@ -46,7 +52,8 @@ ij_status_t ij_validate_logger_config(const ij_logger_config_t *config)
         return IJ_STATUS_INVALID_ARGUMENT;
     }
     if (!ij_level_is_valid(config->min_level) || !ij_sink_kind_is_valid(config->sink_kind) ||
-        !ij_redaction_mode_is_valid(config->redaction_mode)) {
+        !ij_redaction_mode_is_valid(config->redaction_mode) ||
+        !ij_file_backend_is_valid(config->file_backend)) {
         return IJ_STATUS_INVALID_ARGUMENT;
     }
 
@@ -111,6 +118,7 @@ ij_status_t ij_logger_init(ij_logger_t **out_logger, const ij_logger_config_t *c
         return status;
     }
     if (logger->config.sink_kind == IJ_SINK_KIND_FILE) {
+        logger->file_sink.requested_backend = logger->config.file_backend;
         status = ij_file_sink_open(&logger->file_sink, logger->config.file_path);
         if (status != IJ_STATUS_OK) {
             ij_ring_destroy(&logger->ring);
@@ -177,7 +185,6 @@ ij_status_t ij_logger_flush(ij_logger_t *logger)
 ij_status_t ij_logger_log(ij_logger_t *logger, const ij_event_t *event)
 {
     ij_event_copy_t copied_event = {0};
-    ij_event_copy_t emitted_event = {0};
     char payload[8192];
     size_t payload_len = 0U;
     ij_status_t status;
@@ -196,30 +203,22 @@ ij_status_t ij_logger_log(ij_logger_t *logger, const ij_event_t *event)
     if (status != IJ_STATUS_OK) {
         return status;
     }
-    status = ij_ring_enqueue(&logger->ring, &copied_event);
-    if (status != IJ_STATUS_OK) {
-        ij_event_copy_dispose(&copied_event);
-        return status;
-    }
-    if (!ij_ring_try_dequeue(&logger->ring, &emitted_event)) {
-        return IJ_STATUS_INTERNAL_ERROR;
-    }
 
     switch (logger->config.sink_kind) {
     case IJ_SINK_KIND_CONSOLE:
-        status = ij_json_console_encode(&emitted_event, payload, sizeof(payload), &payload_len);
+        status = ij_json_console_encode(&copied_event, payload, sizeof(payload), &payload_len);
         if (status == IJ_STATUS_OK) {
             status = ij_console_sink_write(payload, payload_len);
         }
         break;
     case IJ_SINK_KIND_FILE:
-        status = ij_ndjson_encode(&emitted_event, payload, sizeof(payload), &payload_len);
+        status = ij_ndjson_encode(&copied_event, payload, sizeof(payload), &payload_len);
         if (status == IJ_STATUS_OK) {
             status = ij_file_sink_write(&logger->file_sink, payload, payload_len);
         }
         break;
     case IJ_SINK_KIND_SYSLOG:
-        status = ij_rfc5424_encode(&emitted_event, &logger->config, payload, sizeof(payload),
+        status = ij_rfc5424_encode(&copied_event, &logger->config, payload, sizeof(payload),
                                    &payload_len);
         if (status == IJ_STATUS_OK) {
             if (logger->config.syslog_transport == IJ_SYSLOG_TRANSPORT_UDP) {
@@ -236,6 +235,6 @@ ij_status_t ij_logger_log(ij_logger_t *logger, const ij_event_t *event)
         break;
     }
 
-    ij_event_copy_dispose(&emitted_event);
+    ij_event_copy_dispose(&copied_event);
     return status;
 }

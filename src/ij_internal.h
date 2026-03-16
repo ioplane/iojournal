@@ -7,6 +7,8 @@
 #ifndef IOJOURNAL_IJ_INTERNAL_H
 #define IOJOURNAL_IJ_INTERNAL_H
 
+#include "encoders/ij_simd_dispatch.h"
+
 #include <iojournal/iojournal.h>
 
 #include <stdatomic.h>
@@ -18,14 +20,16 @@
 #include <threads.h>
 #include <time.h>
 
-#define IJ_VERSION_MAJOR  0
-#define IJ_VERSION_MINOR  1
-#define IJ_VERSION_PATCH  0
-#define IJ_VERSION_STRING "0.1.0"
+#define IJ_VERSION_MAJOR    0
+#define IJ_VERSION_MINOR    1
+#define IJ_VERSION_PATCH    0
+#define IJ_VERSION_STRING   "0.1.0"
+#define IJ_REDACTED_LITERAL "[REDACTED]"
 
 typedef struct {
     char *data;
     size_t len;
+    bool needs_json_escape;
 } ij_owned_string_t;
 
 typedef struct {
@@ -59,6 +63,8 @@ typedef struct {
     ij_owned_string_t source_file;
     uint32_t source_line;
     ij_owned_string_t source_function;
+    char *text_arena;
+    size_t text_arena_size;
 } ij_event_copy_t;
 
 typedef struct {
@@ -77,7 +83,11 @@ typedef struct {
 
 typedef struct {
     char *path;
+    ij_file_backend_t requested_backend;
+    ij_file_backend_t active_backend;
     FILE *stream;
+    int fd;
+    struct io_uring *uring;
     size_t rotate_bytes;
     uint32_t rotate_interval_seconds;
     size_t retention_files;
@@ -107,9 +117,12 @@ bool ij_sink_kind_is_valid(ij_sink_kind_t sink_kind);
 bool ij_syslog_transport_is_valid(ij_syslog_transport_t transport);
 bool ij_syslog_facility_is_valid(ij_syslog_facility_t facility);
 bool ij_redaction_mode_is_valid(ij_redaction_mode_t mode);
+bool ij_file_backend_is_valid(ij_file_backend_t backend);
 bool ij_level_is_enabled(ij_level_t min_level, ij_level_t event_level);
 const char *ij_level_to_text(ij_level_t level);
+bool ij_key_should_redact_n(const char *key, size_t key_len);
 bool ij_key_should_redact(const char *key);
+void ij_redact_owned_attr_value_n(const char *key, size_t key_len, ij_owned_attr_value_t *value);
 void ij_redact_owned_attr_value(const char *key, ij_owned_attr_value_t *value);
 ij_status_t ij_validate_logger_config(const ij_logger_config_t *config);
 ij_status_t ij_validate_event(const ij_event_t *event);
@@ -132,6 +145,14 @@ ij_status_t ij_file_sink_open(ij_file_sink_t *sink, const char *path);
 ij_status_t ij_file_sink_write(ij_file_sink_t *sink, const char *payload, size_t payload_len);
 ij_status_t ij_file_sink_flush(ij_file_sink_t *sink);
 void ij_file_sink_close(ij_file_sink_t *sink);
+ij_status_t ij_file_sink_sync_open(ij_file_sink_t *sink);
+ij_status_t ij_file_sink_sync_write(ij_file_sink_t *sink, const char *payload, size_t payload_len);
+ij_status_t ij_file_sink_sync_flush(ij_file_sink_t *sink);
+void ij_file_sink_sync_close(ij_file_sink_t *sink);
+ij_status_t ij_file_sink_uring_open(ij_file_sink_t *sink);
+ij_status_t ij_file_sink_uring_write(ij_file_sink_t *sink, const char *payload, size_t payload_len);
+ij_status_t ij_file_sink_uring_flush(ij_file_sink_t *sink);
+void ij_file_sink_uring_close(ij_file_sink_t *sink);
 ij_status_t ij_syslog_udp_open(ij_syslog_sink_t *sink, const char *host, uint16_t port);
 ij_status_t ij_syslog_udp_write(ij_syslog_sink_t *sink, const char *payload, size_t payload_len);
 ij_status_t ij_syslog_tcp_open(ij_syslog_sink_t *sink, const char *host, uint16_t port);

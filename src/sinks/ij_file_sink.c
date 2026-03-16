@@ -1,16 +1,36 @@
 /*
- * iojournal -- file sink
+ * iojournal -- file sink backend dispatch
  *
  * SPDX-License-Identifier: MIT
  */
 
 #include "ij_internal.h"
 
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+
+typedef struct {
+    ij_status_t (*open)(ij_file_sink_t *sink);
+    ij_status_t (*write)(ij_file_sink_t *sink, const char *payload, size_t payload_len);
+    ij_status_t (*flush)(ij_file_sink_t *sink);
+    void (*close)(ij_file_sink_t *sink);
+} ij_file_sink_ops_t;
+
+static const ij_file_sink_ops_t IJ_FILE_SINK_SYNC_OPS = {
+    .open = ij_file_sink_sync_open,
+    .write = ij_file_sink_sync_write,
+    .flush = ij_file_sink_sync_flush,
+    .close = ij_file_sink_sync_close,
+};
+
+static const ij_file_sink_ops_t IJ_FILE_SINK_IO_URING_OPS = {
+    .open = ij_file_sink_uring_open,
+    .write = ij_file_sink_uring_write,
+    .flush = ij_file_sink_uring_flush,
+    .close = ij_file_sink_uring_close,
+};
 
 static void ij_file_sink_reset_rotation_cache(ij_file_sink_t *sink)
 {
@@ -118,7 +138,8 @@ static bool ij_file_sink_rotation_due(const ij_file_sink_t *sink, size_t next_pa
 {
     time_t now = time(NULL);
 
-    if (sink->stream == NULL) {
+    if ((sink->active_backend == IJ_FILE_BACKEND_SYNC && sink->stream == NULL) ||
+        (sink->active_backend == IJ_FILE_BACKEND_IO_URING && sink->fd < 0)) {
         return false;
     }
     if (sink->rotate_bytes > 0U && sink->bytes_written > 0U &&
@@ -133,27 +154,35 @@ static bool ij_file_sink_rotation_due(const ij_file_sink_t *sink, size_t next_pa
     return false;
 }
 
+static const ij_file_sink_ops_t *ij_file_sink_ops(const ij_file_sink_t *sink)
+{
+    if (sink->active_backend == IJ_FILE_BACKEND_IO_URING) {
+        return &IJ_FILE_SINK_IO_URING_OPS;
+    }
+
+    return &IJ_FILE_SINK_SYNC_OPS;
+}
+
 static ij_status_t ij_file_sink_rotate(ij_file_sink_t *sink)
 {
     char rotated_path[4096];
-    int close_result;
+    const ij_file_sink_ops_t *ops;
+    ij_status_t status;
 
-    if (sink == NULL || sink->stream == NULL) {
+    if (sink == NULL || sink->path == NULL) {
         return IJ_STATUS_INVALID_ARGUMENT;
     }
 
+    ops = ij_file_sink_ops(sink);
     if (ij_file_sink_make_rotation_path(sink, rotated_path, sizeof(rotated_path)) != IJ_STATUS_OK) {
         return IJ_STATUS_SINK_ERROR;
     }
-    if (fflush(sink->stream) != 0) {
-        return IJ_STATUS_SINK_ERROR;
-    }
 
-    close_result = fclose(sink->stream);
-    sink->stream = NULL;
-    if (close_result != 0) {
-        return IJ_STATUS_SINK_ERROR;
+    status = ops->flush(sink);
+    if (status != IJ_STATUS_OK) {
+        return status;
     }
+    ops->close(sink);
     if (rename(sink->path, rotated_path) != 0) {
         return IJ_STATUS_SINK_ERROR;
     }
@@ -166,33 +195,54 @@ static ij_status_t ij_file_sink_rotate(ij_file_sink_t *sink)
     sink->last_rotation_epoch = time(NULL);
     ij_file_sink_apply_retention(sink);
 
-    sink->stream = fopen(sink->path, "ab");
-    if (sink->stream == NULL) {
-        return IJ_STATUS_SINK_ERROR;
-    }
-
-    return IJ_STATUS_OK;
+    return ops->open(sink);
 }
 
 ij_status_t ij_file_sink_open(ij_file_sink_t *sink, const char *path)
 {
     ij_status_t status;
+    const ij_file_sink_ops_t *ops;
+    ij_file_backend_t requested_backend;
 
     if (sink == NULL || path == NULL || path[0] == '\0') {
         return IJ_STATUS_INVALID_ARGUMENT;
     }
 
+    requested_backend = sink->requested_backend;
     memset(sink, 0, sizeof(*sink));
+    sink->fd = -1;
+    sink->requested_backend = requested_backend;
+
     status = ij_file_sink_store_path(sink, path);
     if (status != IJ_STATUS_OK) {
         return status;
     }
 
-    sink->stream = fopen(path, "ab");
-    if (sink->stream == NULL) {
-        ij_file_sink_close(sink);
-        return IJ_STATUS_SINK_ERROR;
+    if (sink->requested_backend == IJ_FILE_BACKEND_IO_URING) {
+        sink->active_backend = IJ_FILE_BACKEND_IO_URING;
+        ops = ij_file_sink_ops(sink);
+        status = ops->open(sink);
+        if (status != IJ_STATUS_OK) {
+            sink->active_backend = IJ_FILE_BACKEND_SYNC;
+            sink->fd = -1;
+            sink->uring = NULL;
+            ops = ij_file_sink_ops(sink);
+            status = ops->open(sink);
+            if (status != IJ_STATUS_OK) {
+                ij_file_sink_close(sink);
+                return status;
+            }
+        }
+    } else {
+        sink->active_backend = IJ_FILE_BACKEND_SYNC;
+        ops = ij_file_sink_ops(sink);
+        status = ops->open(sink);
+        if (status != IJ_STATUS_OK) {
+            ij_file_sink_close(sink);
+            return status;
+        }
     }
+
     sink->bytes_written = 0U;
     sink->rotation_sequence = 0U;
     sink->last_rotation_epoch = time(NULL);
@@ -202,32 +252,36 @@ ij_status_t ij_file_sink_open(ij_file_sink_t *sink, const char *path)
 
 ij_status_t ij_file_sink_write(ij_file_sink_t *sink, const char *payload, size_t payload_len)
 {
-    if (sink == NULL || sink->stream == NULL || payload == NULL || payload_len == 0U) {
+    ij_status_t status;
+    const ij_file_sink_ops_t *ops;
+
+    if (sink == NULL || payload == NULL || payload_len == 0U) {
         return IJ_STATUS_INVALID_ARGUMENT;
     }
 
+    ops = ij_file_sink_ops(sink);
     if (ij_file_sink_rotation_due(sink, payload_len)) {
-        ij_status_t rotate_status = ij_file_sink_rotate(sink);
-
-        if (rotate_status != IJ_STATUS_OK) {
-            return rotate_status;
+        status = ij_file_sink_rotate(sink);
+        if (status != IJ_STATUS_OK) {
+            return status;
         }
     }
-    if (fwrite(payload, 1U, payload_len, sink->stream) != payload_len) {
-        return IJ_STATUS_SINK_ERROR;
-    }
-    sink->bytes_written += payload_len;
 
-    return IJ_STATUS_OK;
+    status = ops->write(sink, payload, payload_len);
+    if (status == IJ_STATUS_OK) {
+        sink->bytes_written += payload_len;
+    }
+
+    return status;
 }
 
 ij_status_t ij_file_sink_flush(ij_file_sink_t *sink)
 {
-    if (sink == NULL || sink->stream == NULL) {
+    if (sink == NULL) {
         return IJ_STATUS_INVALID_ARGUMENT;
     }
 
-    return fflush(sink->stream) == 0 ? IJ_STATUS_OK : IJ_STATUS_SINK_ERROR;
+    return ij_file_sink_ops(sink)->flush(sink);
 }
 
 void ij_file_sink_close(ij_file_sink_t *sink)
@@ -236,10 +290,7 @@ void ij_file_sink_close(ij_file_sink_t *sink)
         return;
     }
 
-    if (sink->stream != NULL) {
-        (void)fclose(sink->stream);
-        sink->stream = NULL;
-    }
+    ij_file_sink_ops(sink)->close(sink);
     ij_file_sink_reset_rotation_cache(sink);
     free(sink->path);
     sink->path = NULL;

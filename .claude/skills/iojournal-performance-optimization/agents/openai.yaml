@@ -1,0 +1,4 @@
+interface:
+  display_name: "iojournal Performance Optimization"
+  short_description: "Measured performance workflow and RC optimization rules"
+  default_prompt: "Use $iojournal-performance-optimization for benchmarking, profiling, SIMD, io_uring, and hot-path optimization work in iojournal. Keep SIMD internal, keep the public ABI scalar-only, and keep AVX-512/SVE work out of RC scope unless a measured plan reopens it."

@@ -17,14 +17,16 @@ cat > "${DIST_DIR}/RELEASE_NOTES.md" <<EOF
 
 ## Scope
 
-- structured logging library for the \`io*\` ecosystem
-- bounded producer -> buffer -> filter -> encoder -> sink pipeline
-- standards-oriented syslog, NDJSON, and OTLP-ready direction
+- bounded logging library for the \`io*\` ecosystem
+- synchronous RC API with stable console, file, and syslog sinks
+- release-blocking comparison and optimization evidence included in the RC decision surface
 
 ## Verification
 
 - release gate: \`scripts/run-release-gate.sh\`
 - release-candidate evidence: \`${RC_RUN_ID}\`
+- comparison evidence: \`docs/plans/comparison/PERFORMANCE_RESULTS.md\`
+- publish decision: \`docs/en/06-rc1-publish-decision.md\`
 
 ## Published Assets
 
@@ -36,7 +38,8 @@ cat > "${DIST_DIR}/RELEASE_NOTES.md" <<EOF
 
 ## References
 
-- architecture plan: \`docs/plans/2026-03-10-iojournal-c23-architecture-plan.md\`
-- repository bootstrap spec: \`docs/superpowers/specs/2026-03-14-iojournal-repository-bootstrap-design.md\`
+- roadmap: \`docs/plans/ROADMAP.md\`
+- release checklist: \`docs/en/05-release-candidate-checklist.md\`
+- publish decision: \`docs/en/06-rc1-publish-decision.md\`
 - local RFC mirror: \`docs/rfc/\`
 EOF

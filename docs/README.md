@@ -28,9 +28,14 @@ This directory contains the authoritative project documentation for `iojournal`.
 - Use `docs/api/README.md` for the current RC public API and event-model contract pack.
 - Use `docs/architecture/QUEUE_MODEL.md` for the current RC queue topology and overflow model.
 - Use `docs/testing/CONCURRENCY_MATRIX.md` for the current mandatory concurrency validation matrix.
+- Use `docs/testing/BENCHMARK_METHODOLOGY.md` for the normalized benchmark and comparison contract.
+- Use `docs/testing/PROFILER_WORKFLOW.md` for the profiler and performance-review workflow.
 - Start with `docs/en/01-bootstrap-and-rfc-corpus.md` for the current stable bootstrap and RFC corpus contract.
 - Use `docs/en/02-file-sink.md` for the current stable RC file sink contract.
 - Use `docs/en/03-syslog-contract.md` for the current stable RC syslog formatter and transport contract.
+- Use `docs/en/04-tooling-and-agent-workflow.md` for the stable development workflow, Clang toolchain, and agent/skill contract.
+- Use `docs/en/05-release-candidate-checklist.md` for the current stable `v0.1.0-rc.1` publication gate.
+- Use `docs/en/06-rc1-publish-decision.md` for the current explicit publish or no-publish decision.
 - Use `docs/plans/ROADMAP.md` for the delivery path to `v0.1.0-rc.1`.
 - Use `docs/rfc/README.md` for the local RFC mirror workflow and corpus maintenance rules.
 
