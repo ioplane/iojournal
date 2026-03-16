@@ -130,10 +130,46 @@ void test_rfc5424_formatter_falls_back_to_logger_config_when_event_logger_missin
     ij_event_copy_dispose(&copied_event);
 }
 
+void test_rfc5424_encode_fails_with_tiny_buffer(void)
+{
+    ij_event_t event = ij_test_syslog_event("tests.syslog", IJ_LEVEL_INFO, "service started");
+    ij_event_copy_t copied_event = {0};
+    ij_logger_config_t config = ij_test_syslog_config(IJ_SYSLOG_FACILITY_LOCAL0, "tests.default");
+    char buffer[10];
+    size_t output_size = 0U;
+
+    TEST_ASSERT_EQUAL_INT(IJ_STATUS_OK, ij_event_copy_from_input(&copied_event, &event,
+                                                                 IJ_REDACTION_MODE_ENABLED));
+    TEST_ASSERT_EQUAL_INT(IJ_STATUS_ENCODE_ERROR,
+                          ij_rfc5424_encode(&copied_event, &config, buffer, 10, &output_size));
+
+    ij_event_copy_dispose(&copied_event);
+}
+
+void test_rfc5424_encode_sanitizes_app_name_with_special_chars(void)
+{
+    ij_event_t event = ij_test_syslog_event("my app\nnewline", IJ_LEVEL_INFO, "sanitize check");
+    ij_event_copy_t copied_event = {0};
+    ij_logger_config_t config = ij_test_syslog_config(IJ_SYSLOG_FACILITY_LOCAL0, "tests.default");
+    char buffer[512];
+    size_t output_size = 0U;
+
+    TEST_ASSERT_EQUAL_INT(IJ_STATUS_OK, ij_event_copy_from_input(&copied_event, &event,
+                                                                 IJ_REDACTION_MODE_ENABLED));
+    TEST_ASSERT_EQUAL_INT(IJ_STATUS_OK, ij_rfc5424_encode(&copied_event, &config, buffer,
+                                                          sizeof(buffer), &output_size));
+    TEST_ASSERT_NULL(strchr(buffer, '\n'));
+    TEST_ASSERT_NOT_NULL(strstr(buffer, "my_app"));
+
+    ij_event_copy_dispose(&copied_event);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
     RUN_TEST(test_rfc5424_formatter_emits_canonical_message_for_info_local0);
     RUN_TEST(test_rfc5424_formatter_falls_back_to_logger_config_when_event_logger_missing);
+    RUN_TEST(test_rfc5424_encode_fails_with_tiny_buffer);
+    RUN_TEST(test_rfc5424_encode_sanitizes_app_name_with_special_chars);
     return UNITY_END();
 }

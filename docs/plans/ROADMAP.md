@@ -72,10 +72,12 @@ The release gate is sequential:
 | 11C | Structural hot-path redesign | release-blocking fused validation/copy, length-aware encode, formatting, and redaction-dispatch work |
 | 11D | Contract-preserving fast paths | release-blocking fixed-fragment JSON shaping, event-copy tightening, selective redaction reassessment, and refreshed evidence |
 | 12 | Final RC decision and publication | publish/no-publish decision, final release evidence, and tag/release preparation |
+| 13 | Audit bug fixes and test hardening | critical/high-severity bug fixes from independent audit, concurrency tests, UTF-8 tests, SIMD equivalence tests, encoder overflow tests |
+| 14 | Shell script modernization | all 14 scripts rewritten to Bash 5.1+ with shellcheck 0.11.0 compliance, shared library, shellcheck quality gate step |
 
 ## Current Execution Status
 
-- Sprint 01 through Sprint 11D are complete.
+- Sprint 01 through Sprint 12 Task 0 are complete.
 - Active source-of-record artifacts are now:
   - local benchmark source of record [`20260316-210134`](/opt/projects/repositories/iojournal/docs/tmp/benchmarks/20260316-210134)
   - Tier 1 comparison [`20260316-150320`](/opt/projects/repositories/iojournal/docs/tmp/benchmarks/20260316-150320)

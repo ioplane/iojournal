@@ -91,7 +91,7 @@ void test_redaction_length_aware_entrypoints_preserve_semantics(void)
     TEST_ASSERT_TRUE(ij_key_should_redact_n("ctx.client_secret", strlen("ctx.client_secret")));
     TEST_ASSERT_FALSE(ij_key_should_redact_n("service.name", strlen("service.name")));
 
-    ij_redact_owned_attr_value_n("authorization", 13U, &value);
+    ij_redact_owned_attr_value_n("authorization", 13U, &value, sizeof(buffer));
     TEST_ASSERT_EQUAL_STRING(IJ_REDACTED_LITERAL, value.as.string.data);
     TEST_ASSERT_EQUAL_size_t(sizeof(IJ_REDACTED_LITERAL) - 1U, value.as.string.len);
 }

@@ -113,9 +113,13 @@ bool ij_key_should_redact(const char *key)
     return ij_key_should_redact_n(key, strlen(key));
 }
 
-void ij_redact_owned_attr_value_n(const char *key, size_t key_len, ij_owned_attr_value_t *value)
+void ij_redact_owned_attr_value_n(const char *key, size_t key_len, ij_owned_attr_value_t *value,
+                                  size_t value_capacity)
 {
     if (value == NULL || value->kind != IJ_ATTR_VALUE_STRING || value->as.string.data == NULL) {
+        return;
+    }
+    if (value_capacity < sizeof(IJ_REDACTED_LITERAL) - 1U) {
         return;
     }
     if (!ij_key_should_redact_n(key, key_len)) {
@@ -126,11 +130,12 @@ void ij_redact_owned_attr_value_n(const char *key, size_t key_len, ij_owned_attr
     value->as.string.len = sizeof(IJ_REDACTED_LITERAL) - 1U;
 }
 
-void ij_redact_owned_attr_value(const char *key, ij_owned_attr_value_t *value)
+void ij_redact_owned_attr_value(const char *key, ij_owned_attr_value_t *value,
+                                size_t value_capacity)
 {
     if (key == NULL) {
         return;
     }
 
-    ij_redact_owned_attr_value_n(key, strlen(key), value);
+    ij_redact_owned_attr_value_n(key, strlen(key), value, value_capacity);
 }

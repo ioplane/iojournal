@@ -41,11 +41,32 @@ static const char *ij_syslog_app_name(const ij_event_copy_t *event,
     return "-";
 }
 
+#define IJ_RFC5424_APP_NAME_MAX 48U
+
+static void ij_syslog_sanitize_app_name(const char *raw, char *out, size_t out_size)
+{
+    size_t i = 0U;
+    size_t raw_len = strlen(raw);
+
+    if (raw_len > IJ_RFC5424_APP_NAME_MAX) {
+        raw_len = IJ_RFC5424_APP_NAME_MAX;
+    }
+    if (raw_len >= out_size) {
+        raw_len = out_size - 1U;
+    }
+
+    for (; i < raw_len; i++) {
+        unsigned char c = (unsigned char)raw[i];
+        out[i] = (c >= 33U && c <= 126U) ? (char)c : '_';
+    }
+    out[i] = '\0';
+}
+
 ij_status_t ij_rfc5424_encode(const ij_event_copy_t *event, const ij_logger_config_t *config,
                               char *buffer, size_t buffer_size, size_t *out_len)
 {
     char timestamp[32];
-    const char *app_name;
+    char safe_app_name[IJ_RFC5424_APP_NAME_MAX + 1U];
     const char *message = NULL;
     int severity;
     unsigned int pri;
@@ -66,15 +87,16 @@ ij_status_t ij_rfc5424_encode(const ij_event_copy_t *event, const ij_logger_conf
     }
 
     pri = ((unsigned int)config->syslog_facility * 8U) + (unsigned int)severity;
-    app_name = ij_syslog_app_name(event, config);
+    ij_syslog_sanitize_app_name(ij_syslog_app_name(event, config), safe_app_name,
+                                sizeof(safe_app_name));
     message = event->message.data != NULL ? event->message.data : "";
 
     if (message[0] == '\0') {
         written = snprintf(buffer, buffer_size, "<%u>%u %s - %s - - -", pri,
-                           IJ_SYSLOG_RFC5424_VERSION, timestamp, app_name);
+                           IJ_SYSLOG_RFC5424_VERSION, timestamp, safe_app_name);
     } else {
         written = snprintf(buffer, buffer_size, "<%u>%u %s - %s - - - %s", pri,
-                           IJ_SYSLOG_RFC5424_VERSION, timestamp, app_name, message);
+                           IJ_SYSLOG_RFC5424_VERSION, timestamp, safe_app_name, message);
     }
 
     if (written < 0 || (size_t)written >= buffer_size) {

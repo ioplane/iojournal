@@ -288,6 +288,35 @@ void test_json_console_encoder_preserves_escaped_attribute_keys(void)
     ij_event_copy_dispose(&copied_event);
 }
 
+void test_json_console_encode_fails_with_tiny_buffer(void)
+{
+    ij_event_t event = ij_test_console_event();
+    ij_event_copy_t copied_event = {0};
+    char buffer[10];
+    size_t output_size = 0U;
+
+    TEST_ASSERT_EQUAL_INT(IJ_STATUS_OK, ij_event_copy_from_input(&copied_event, &event,
+                                                                 IJ_REDACTION_MODE_ENABLED));
+    TEST_ASSERT_EQUAL_INT(IJ_STATUS_ENCODE_ERROR,
+                          ij_json_console_encode(&copied_event, buffer, 10, &output_size));
+
+    ij_event_copy_dispose(&copied_event);
+}
+
+void test_json_console_encode_fails_with_zero_buffer(void)
+{
+    ij_event_t event = ij_test_console_event();
+    ij_event_copy_t copied_event = {0};
+    size_t output_size = 0U;
+
+    TEST_ASSERT_EQUAL_INT(IJ_STATUS_OK, ij_event_copy_from_input(&copied_event, &event,
+                                                                 IJ_REDACTION_MODE_ENABLED));
+    ij_status_t status = ij_json_console_encode(&copied_event, NULL, 0, &output_size);
+    TEST_ASSERT_TRUE(status == IJ_STATUS_ENCODE_ERROR || status == IJ_STATUS_INVALID_ARGUMENT);
+
+    ij_event_copy_dispose(&copied_event);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -297,5 +326,7 @@ int main(void)
     RUN_TEST(test_json_console_encoder_preserves_scalar_attribute_text);
     RUN_TEST(test_json_console_encoder_preserves_warn_level_literal);
     RUN_TEST(test_json_console_encoder_preserves_escaped_attribute_keys);
+    RUN_TEST(test_json_console_encode_fails_with_tiny_buffer);
+    RUN_TEST(test_json_console_encode_fails_with_zero_buffer);
     return UNITY_END();
 }
