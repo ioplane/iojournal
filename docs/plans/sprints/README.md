@@ -49,5 +49,5 @@ These files are the detailed execution plans for the `v0.1.0-rc.1` program.
 - Sprint 11C is complete and hands off to the next optimization tranche.
 - Sprint 11D is complete and passed evidence refresh.
 - Sprint 12 Task 0 is complete; publication hardening continues pending remote gate.
-- Sprint 13 addresses critical and high-severity bugs from the independent code audit.
-- Sprint 14 modernizes all shell scripts to Bash 5.1+ with shellcheck 0.11.0 compliance.
+- Sprint 13 is complete: 6 bug fixes (2 CRITICAL, 4 HIGH), 33 new tests, quality gate PASS 14/14.
+- Sprint 14 is complete: 14 scripts rewritten, shared library created, shellcheck gate added, quality gate PASS 15/15.
