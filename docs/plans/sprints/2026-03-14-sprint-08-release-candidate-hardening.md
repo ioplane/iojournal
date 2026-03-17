@@ -1,10 +1,10 @@
-# Sprint 08: Release Candidate Hardening Implementation Plan
+# Sprint 08: RC Infrastructure And Evidence Hardening Implementation Plan
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** turn the implemented RC feature surface into a publishable `v0.1.0-rc.1` candidate with verification evidence, examples, packaging, and explicit publish/no-publish criteria.
+**Goal:** harden the implemented RC feature surface into a measurable release-candidate infrastructure package with verification evidence, examples, packaging, and explicit publish-gate inputs.
 
-**Architecture:** this sprint should not add new features. It should only harden, document, verify, and package the existing RC surface.
+**Architecture:** this sprint should not add new features. It should only harden, document, verify, and package the existing RC surface. The final publish/no-publish decision moves to Sprint 11 after benchmark and comparison evidence exist.
 
 **Tech Stack:** release scripts, examples, changelog, release notes, docs, verification artifacts.
 

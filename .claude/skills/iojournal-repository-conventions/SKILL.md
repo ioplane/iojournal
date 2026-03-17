@@ -15,6 +15,7 @@ Use this skill to keep repository structure, documentation layout, and release-f
 - Treat `docs/tmp/` as research and scratch space, not the canonical surface.
 - Keep repository-local skills under `.claude/skills/`.
 - Prefer the common `io*` project layout for contributor files, CI, and release assets.
+- Treat `docs/plans/comparison/` and `docs/testing/*RELEVANCE.md` as the authoritative release-facing perf surface.
 
 ## Documentation And Release Rules
 
@@ -27,6 +28,7 @@ Use this skill to keep repository structure, documentation layout, and release-f
 1. Check whether the change touches repository policy, docs layout, or release automation.
 2. Keep the file layout aligned with other `io*` repositories unless `iojournal` has a real need to diverge.
 3. Treat bootstrap-only files as scaffolding and keep project-specific claims factual.
+4. When sprint sequencing changes, update `docs/plans/ROADMAP.md`, the master plan, the sprint index, and `.claude/skills/ROADMAP.md` together.
 
 ## References
 

@@ -31,12 +31,45 @@
       }
     },
     {
+      "name": "gcc-base",
+      "hidden": true,
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc"
+      },
+      "environment": {
+        "CC": "gcc"
+      }
+    },
+    {
       "name": "clang-debug",
       "displayName": "Clang Debug",
       "description": "Clang debug build for iojournal core development",
       "inherits": "clang-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "clang-perf",
+      "displayName": "Clang Performance",
+      "description": "Clang RelWithDebInfo build for release-facing benchmarks and profiler review",
+      "inherits": "clang-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_FLAGS_RELWITHDEBINFO": "-O2 -g -DNDEBUG -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO": ""
+      }
+    },
+    {
+      "name": "clang-uftrace",
+      "displayName": "Clang uftrace",
+      "description": "Clang RelWithDebInfo build with -pg for uftrace and gprof-style profiling",
+      "inherits": "clang-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_FLAGS_RELWITHDEBINFO": "-O2 -g -DNDEBUG -fno-omit-frame-pointer -pg",
+        "CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO": "-pg"
       }
     },
     {
@@ -71,12 +104,43 @@
         "CMAKE_C_FLAGS": "-fprofile-instr-generate -fcoverage-mapping -O0 -g",
         "CMAKE_EXE_LINKER_FLAGS": "-fprofile-instr-generate -fcoverage-mapping"
       }
+    },
+    {
+      "name": "gcc-analyzer",
+      "displayName": "GCC Analyzer",
+      "description": "GCC debug build with -fanalyzer diagnostics enabled",
+      "inherits": "gcc-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_FLAGS": "-fanalyzer -Wanalyzer-too-complex -Wanalyzer-symbol-too-complex -Wno-error=analyzer-too-complex -Wno-error=analyzer-symbol-too-complex -Wno-error=analyzer-malloc-leak -Wno-error=analyzer-fd-leak -Wno-error=format-truncation -Wno-error=format-overflow -O0 -g"
+      }
+    },
+    {
+      "name": "gcc-coverage",
+      "displayName": "GCC Coverage",
+      "description": "GCC debug build with gcov-compatible coverage instrumentation",
+      "inherits": "gcc-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_FLAGS": "--coverage -Wno-error=format-truncation -Wno-error=format-overflow -O0 -g",
+        "CMAKE_EXE_LINKER_FLAGS": "--coverage"
+      }
     }
   ],
   "buildPresets": [
     {
       "name": "clang-debug",
       "configurePreset": "clang-debug",
+      "jobs": 0
+    },
+    {
+      "name": "clang-perf",
+      "configurePreset": "clang-perf",
+      "jobs": 0
+    },
+    {
+      "name": "clang-uftrace",
+      "configurePreset": "clang-uftrace",
       "jobs": 0
     },
     {
@@ -93,12 +157,30 @@
       "name": "clang-coverage",
       "configurePreset": "clang-coverage",
       "jobs": 0
+    },
+    {
+      "name": "gcc-analyzer",
+      "configurePreset": "gcc-analyzer",
+      "jobs": 0
+    },
+    {
+      "name": "gcc-coverage",
+      "configurePreset": "gcc-coverage",
+      "jobs": 0
     }
   ],
   "testPresets": [
     {
       "name": "clang-debug",
       "configurePreset": "clang-debug",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "default"
+      }
+    },
+    {
+      "name": "clang-perf",
+      "configurePreset": "clang-perf",
       "output": {
         "outputOnFailure": true,
         "verbosity": "default"
@@ -130,6 +212,30 @@
     {
       "name": "clang-coverage",
       "configurePreset": "clang-coverage",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "default"
+      }
+    },
+    {
+      "name": "clang-uftrace",
+      "configurePreset": "clang-uftrace",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "default"
+      }
+    },
+    {
+      "name": "gcc-analyzer",
+      "configurePreset": "gcc-analyzer",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "default"
+      }
+    },
+    {
+      "name": "gcc-coverage",
+      "configurePreset": "gcc-coverage",
       "output": {
         "outputOnFailure": true,
         "verbosity": "default"

@@ -15,6 +15,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 option(IOJOURNAL_BUILD_TESTS "Build unit tests" ON)
 option(IOJOURNAL_BUILD_EXAMPLES "Build examples" OFF)
+option(IOJOURNAL_BUILD_BENCH "Build benchmark targets" ON)
 option(IOJOURNAL_INSTALL "Generate install targets" ON)
 
 set(IOJOURNAL_WARNING_FLAGS
@@ -40,20 +41,46 @@ set(IOJOURNAL_SOURCES
     src/core/ij_event.c
     src/core/ij_logger.c
     src/core/ij_queue.c
+    src/core/ij_utf8_arm_neon.c
+    src/core/ij_utf8_scalar.c
+    src/core/ij_utf8_x86_avx2.c
     src/core/ij_version.c
+    src/encoders/ij_json_escape_arm_neon.c
+    src/encoders/ij_json_escape_scalar.c
+    src/encoders/ij_json_escape_x86_avx2.c
     src/encoders/ij_json_console.c
     src/encoders/ij_ndjson.c
     src/encoders/ij_rfc5424.c
     src/filters/ij_level_filter.c
     src/filters/ij_redact.c
+    src/filters/ij_redact_match_arm_neon.c
+    src/filters/ij_redact_match_scalar.c
+    src/filters/ij_redact_match_x86_avx2.c
     src/sinks/ij_console_sink.c
     src/sinks/ij_file_sink.c
+    src/sinks/ij_file_sink_sync.c
     src/sinks/ij_syslog_tcp.c
     src/sinks/ij_syslog_udp.c
 )
 
 add_library(iojournal STATIC ${IOJOURNAL_SOURCES})
 add_library(iojournal::iojournal ALIAS iojournal)
+
+find_path(IOJOURNAL_LIBURING_INCLUDE_DIR liburing.h
+    PATHS /usr/local/include /usr/include
+)
+find_library(IOJOURNAL_LIBURING_LIBRARY NAMES uring
+    PATHS /usr/local/lib /usr/local/lib64 /usr/lib64 /usr/lib
+)
+
+if(IOJOURNAL_LIBURING_INCLUDE_DIR AND IOJOURNAL_LIBURING_LIBRARY)
+    target_sources(iojournal PRIVATE src/sinks/ij_file_sink_uring.c)
+    target_include_directories(iojournal PRIVATE ${IOJOURNAL_LIBURING_INCLUDE_DIR})
+    target_link_libraries(iojournal PRIVATE ${IOJOURNAL_LIBURING_LIBRARY})
+    target_compile_definitions(iojournal PRIVATE IOJOURNAL_HAS_LIBURING=1)
+else()
+    target_compile_definitions(iojournal PRIVATE IOJOURNAL_HAS_LIBURING=0)
+endif()
 
 target_compile_features(iojournal PUBLIC c_std_23)
 target_include_directories(iojournal
@@ -121,8 +148,14 @@ if(IOJOURNAL_BUILD_EXAMPLES AND EXISTS "${CMAKE_SOURCE_DIR}/examples/CMakeLists.
     add_subdirectory(examples)
 endif()
 
+if(IOJOURNAL_BUILD_BENCH AND EXISTS "${CMAKE_SOURCE_DIR}/bench/CMakeLists.txt")
+    add_subdirectory(bench)
+endif()
+
 find_program(CLANG_FORMAT_EXE clang-format)
 file(GLOB_RECURSE IOJOURNAL_FORMAT_SOURCES CONFIGURE_DEPENDS
+    ${CMAKE_SOURCE_DIR}/bench/*.h
+    ${CMAKE_SOURCE_DIR}/bench/*.c
     ${CMAKE_SOURCE_DIR}/include/*.h
     ${CMAKE_SOURCE_DIR}/src/*.h
     ${CMAKE_SOURCE_DIR}/src/*.c

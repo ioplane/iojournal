@@ -141,6 +141,8 @@ Published references:
 - [docs/en/01-bootstrap-and-rfc-corpus.md](docs/en/01-bootstrap-and-rfc-corpus.md)
 - [docs/en/02-file-sink.md](docs/en/02-file-sink.md)
 - [docs/en/03-syslog-contract.md](docs/en/03-syslog-contract.md)
+- [docs/en/05-release-candidate-checklist.md](docs/en/05-release-candidate-checklist.md)
+- [docs/en/06-rc1-publish-decision.md](docs/en/06-rc1-publish-decision.md)
 
 ## References
 

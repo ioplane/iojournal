@@ -28,11 +28,14 @@ The standards-side defer rationale is frozen in `docs/rfc/DIVERGENCES_AND_DEFERR
 
 | Item | Why deferred from RC | Earliest unlock point |
 | --- | --- | --- |
-| dedicated `io_uring` sink backend | introduces a second transport/runtime path not needed for the first RC | after RC, after baseline sink behavior is fixed |
+| broad `io_uring` backend expansion beyond the Sprint 11A decision scope | the RC optimization sprint evaluates only the minimal proven surface; broader backend rollout still widens runtime scope materially | after RC, after the first optimized RC baseline is published |
+| universal SIMD abstraction layer and internal SIMD helper library | the RC line only needs narrow measured kernels and scalar-safe ABI rules; a broader cross-ISA abstraction layer would widen maintenance and verification scope materially | after RC, after the optimized baseline and arm64 evidence are stable |
+| `AVX-512`, `SVE`, and `SVE2` exploration | the RC line freezes SIMD to the measured `AVX2` and `NEON` scope; wider ISA work needs dedicated measurement, dispatch policy, and operability evidence | after RC, after the first optimized RC baseline is published |
 | zero-copy send state machine for network sinks | depends on proven network sink contracts first | after RC, after syslog interoperability evidence |
 | CodeChecker hardening for maximal C23 analysis coverage | requires a separate tooling study and evidence pass to tune analyzer/checker selection, CTU, `clangsa`/`clang-tidy` arguments, sensitive checks, and Z3-backed refutation against the stabilized codebase; see the official CodeChecker docs | after RC, once the base build and sink surface are stable enough to tighten the gate without blocking core feature delivery |
-| benchmark suite with stable scenarios | useful before `1.0`, but not a publish gate for the first RC | after RC, alongside runtime optimization work |
-| profile artifact collection and trend reports | depends on stable benchmark scenarios and build surface | after RC, after benchmark suite exists |
+| long-term performance trend archive | depends on a stable benchmark suite and multiple release points | after RC, after the first comparison program is complete |
+| expanded competitor matrix beyond Tier 1/Tier 2 | useful after the first RC, but not required for the first publish decision | after RC, after the initial comparison pack is published |
+| deep PGO/LTO optimization campaign | requires a stable published baseline before aggressive optimizer tuning work | after RC, after the initial perf review |
 
 ## Documentation And Adoption
 

@@ -7,9 +7,13 @@ description: Use when implementing or refactoring core queues, encoders, sinks, 
 
 ## Overview
 
-Use this skill to keep `iojournal` aligned with its logging-library boundaries: bounded hot path, preallocated transport between producers and consumers, and strict separation between record creation, encoding, and delivery.
+Use this skill to keep `iojournal` aligned with its logging-library boundaries: bounded hot path, strict separation between record creation, encoding, and delivery, and evidence-driven optimization without widening RC scope.
 
-Read `docs/plans/2026-03-10-iojournal-c23-architecture-plan.md` before changing architecture-sensitive code.
+Read these before changing architecture-sensitive code:
+- `docs/plans/ROADMAP.md`
+- `docs/plans/comparison/PERFORMANCE_RESULTS.md`
+- `docs/testing/IO_URING_RELEVANCE.md`
+- `docs/testing/SIMD_RELEVANCE.md`
 
 ## Core Model
 
@@ -43,6 +47,9 @@ Read `docs/plans/2026-03-10-iojournal-c23-architecture-plan.md` before changing 
 - Redaction is enabled by default for sensitive fields.
 - Sink/network reliability concerns must not leak blocking behavior into producers.
 - `io_uring` optimizations must respect buffer lifetime until completion notification.
+- Current RC decisions:
+  - `io_uring` is not an RC-active backend
+  - SIMD is RC-active only for `x86_64 AVX2` JSON escape and UTF-8 validation
 
 ## Workflow
 
@@ -51,7 +58,8 @@ When changing architecture-sensitive code:
 2. Confirm the change belongs in `iojournal`, not a consumer integration.
 3. Check whether the hot path stays bounded and allocation-free.
 4. Verify queueing, redaction, and sink ownership still match the module boundary.
-5. Update tests and the architecture skill references if the boundary shifts.
+5. Keep experimental ISA or backend code behind explicit fallbacks until measured evidence promotes it.
+6. Update tests and the architecture skill references if the boundary shifts.
 
 ## References
 

@@ -102,7 +102,7 @@ void test_rfc5424_formatter_emits_canonical_message_for_info_local0(void)
     TEST_ASSERT_EQUAL_INT(IJ_STATUS_OK, ij_rfc5424_encode(&copied_event, &config, actual,
                                                           sizeof(actual), &output_size));
     TEST_ASSERT_EQUAL_STRING(expected, actual);
-    TEST_ASSERT_TRUE(output_size > 0U);
+    TEST_ASSERT_EQUAL_size_t(strlen(expected), output_size);
 
     ij_event_copy_dispose(&copied_event);
 }
@@ -125,7 +125,7 @@ void test_rfc5424_formatter_falls_back_to_logger_config_when_event_logger_missin
     TEST_ASSERT_EQUAL_INT(IJ_STATUS_OK, ij_rfc5424_encode(&copied_event, &config, actual,
                                                           sizeof(actual), &output_size));
     TEST_ASSERT_EQUAL_STRING(expected, actual);
-    TEST_ASSERT_TRUE(output_size > 0U);
+    TEST_ASSERT_EQUAL_size_t(strlen(expected), output_size);
 
     ij_event_copy_dispose(&copied_event);
 }

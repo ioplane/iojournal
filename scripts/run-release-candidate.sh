@@ -48,6 +48,9 @@ Run id: \`${RUN_ID}\`
 ## Verification Scope
 
 - release gate
+- Sprint 10 functional and performance comparison evidence
+- Sprint 11A and Sprint 11B optimization evidence
+- Sprint 12 publication checklist and decision surface
 - host and toolchain capture
 - bootstrap-state artifact generation
 
@@ -57,10 +60,17 @@ Run id: \`${RUN_ID}\`
 - \`host.txt\`
 - \`toolchain.txt\`
 - \`release-gate.txt\`
+- \`summary.md\`
+
+## Evidence References
+
+- \`docs/plans/comparison/PERFORMANCE_RESULTS.md\`
+- \`docs/en/05-release-candidate-checklist.md\`
+- \`docs/en/06-rc1-publish-decision.md\`
 
 ## Result
 
-Release-candidate bootstrap checks completed for this run.
+Local release-candidate checks completed for this run.
 EOF
 
 if [[ ! -f "${INDEX_FILE}" ]]; then

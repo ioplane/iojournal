@@ -7,6 +7,8 @@
 #ifndef IOJOURNAL_IOJOURNAL_TYPES_H
 #define IOJOURNAL_IOJOURNAL_TYPES_H
 
+#include <iojournal/iojournal_perf.h>
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -169,6 +171,7 @@ typedef struct {
     size_t file_rotate_bytes;
     uint32_t file_rotate_interval_seconds;
     size_t file_retention_files;
+    ij_file_backend_t file_backend;
     const char *syslog_host;
     uint16_t syslog_port;
     ij_syslog_transport_t syslog_transport;

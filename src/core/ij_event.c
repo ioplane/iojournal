@@ -11,65 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define IJ_REDACTED_LITERAL "[REDACTED]"
-
-static bool ij_utf8_is_valid(const char *data, size_t len)
-{
-    size_t i = 0U;
-
-    while (i < len) {
-        unsigned char c = (unsigned char)data[i];
-        size_t remaining = len - i;
-
-        if (c <= 0x7fU) {
-            i += 1U;
-            continue;
-        }
-
-        if ((c & 0xe0U) == 0xc0U) {
-            if (remaining < 2U || (data[i + 1U] & 0xc0) != 0x80 || c < 0xc2U) {
-                return false;
-            }
-            i += 2U;
-            continue;
-        }
-
-        if ((c & 0xf0U) == 0xe0U) {
-            unsigned char c1 = (unsigned char)data[i + 1U];
-            unsigned char c2 = (unsigned char)data[i + 2U];
-
-            if (remaining < 3U || (c1 & 0xc0U) != 0x80U || (c2 & 0xc0U) != 0x80U) {
-                return false;
-            }
-            if ((c == 0xe0U && c1 < 0xa0U) || (c == 0xedU && c1 >= 0xa0U)) {
-                return false;
-            }
-            i += 3U;
-            continue;
-        }
-
-        if ((c & 0xf8U) == 0xf0U) {
-            unsigned char c1 = (unsigned char)data[i + 1U];
-            unsigned char c2 = (unsigned char)data[i + 2U];
-            unsigned char c3 = (unsigned char)data[i + 3U];
-
-            if (remaining < 4U || (c1 & 0xc0U) != 0x80U || (c2 & 0xc0U) != 0x80U ||
-                (c3 & 0xc0U) != 0x80U) {
-                return false;
-            }
-            if ((c == 0xf0U && c1 < 0x90U) || (c == 0xf4U && c1 >= 0x90U) || c > 0xf4U) {
-                return false;
-            }
-            i += 4U;
-            continue;
-        }
-
-        return false;
-    }
-
-    return true;
-}
-
 static bool ij_validate_string_field(const char *value, size_t max_len, bool allow_empty)
 {
     size_t len;
@@ -78,12 +19,12 @@ static bool ij_validate_string_field(const char *value, size_t max_len, bool all
         return false;
     }
 
-    len = strlen(value);
+    len = strnlen(value, max_len + 1U);
     if ((!allow_empty && len == 0U) || len > max_len) {
         return false;
     }
 
-    return ij_utf8_is_valid(value, len);
+    return ij_utf8_is_valid_dispatch(value, len);
 }
 
 static bool ij_validate_attr_value(const ij_attr_value_t *value)
@@ -97,7 +38,7 @@ static bool ij_validate_attr_value(const ij_attr_value_t *value)
         if (value->as.string.data == NULL || value->as.string.len > IJ_ATTRIBUTE_STRING_MAX_LEN) {
             return false;
         }
-        return ij_utf8_is_valid(value->as.string.data, value->as.string.len);
+        return ij_utf8_is_valid_dispatch(value->as.string.data, value->as.string.len);
     case IJ_ATTR_VALUE_SIGNED:
     case IJ_ATTR_VALUE_UNSIGNED:
     case IJ_ATTR_VALUE_BOOL:
@@ -148,34 +89,122 @@ static size_t ij_event_text_size(const ij_event_t *event)
     return total;
 }
 
-static ij_status_t ij_copy_owned_string(ij_owned_string_t *out_string, const char *value,
-                                        size_t len)
+static size_t ij_max_size(size_t left, size_t right)
 {
-    char *buffer;
+    return left > right ? left : right;
+}
 
-    out_string->data = NULL;
-    out_string->len = 0U;
+static bool ij_ascii_needs_json_escape(unsigned char c)
+{
+    return c < 0x20U || c == '"' || c == '\\';
+}
 
-    buffer = malloc(len + 1U);
-    if (buffer == NULL) {
-        return IJ_STATUS_INTERNAL_ERROR;
+static bool ij_scan_string_field_copy(const char *value, size_t max_len, bool allow_empty,
+                                      size_t *out_len, bool *out_needs_json_escape)
+{
+    bool needs_json_escape = false;
+
+    if (value == NULL || out_len == NULL || out_needs_json_escape == NULL) {
+        return false;
     }
+
+    for (size_t i = 0U; i <= max_len; ++i) {
+        unsigned char c = (unsigned char)value[i];
+
+        if (c == '\0') {
+            if (!allow_empty && i == 0U) {
+                return false;
+            }
+            *out_len = i;
+            *out_needs_json_escape = needs_json_escape;
+            return true;
+        }
+        if ((c & 0x80U) != 0U) {
+            size_t len = strnlen(value, max_len + 1U);
+
+            if ((!allow_empty && len == 0U) || len > max_len) {
+                return false;
+            }
+            if (!ij_utf8_is_valid_dispatch(value, len)) {
+                return false;
+            }
+
+            *out_len = len;
+            *out_needs_json_escape =
+                ij_json_escape_find_first_special((const unsigned char *)value, len) != len;
+            return true;
+        }
+        needs_json_escape = needs_json_escape || ij_ascii_needs_json_escape(c);
+    }
+
+    return false;
+}
+
+static bool ij_validate_attr_string_copy(const char *value, size_t len, bool *out_needs_json_escape)
+{
+    bool needs_json_escape = false;
+
+    if (value == NULL || out_needs_json_escape == NULL || len > IJ_ATTRIBUTE_STRING_MAX_LEN) {
+        return false;
+    }
+
+    for (size_t i = 0U; i < len; ++i) {
+        unsigned char c = (unsigned char)value[i];
+
+        if ((c & 0x80U) != 0U) {
+            if (!ij_utf8_is_valid_dispatch(value, len)) {
+                return false;
+            }
+
+            *out_needs_json_escape =
+                ij_json_escape_find_first_special((const unsigned char *)value, len) != len;
+            return true;
+        }
+        needs_json_escape = needs_json_escape || ij_ascii_needs_json_escape(c);
+    }
+
+    *out_needs_json_escape = needs_json_escape;
+    return true;
+}
+
+static bool ij_attr_keys_equal(const char *left, size_t left_len, const char *right,
+                               size_t right_len)
+{
+    return left_len == right_len && memcmp(left, right, left_len) == 0;
+}
+
+static ij_status_t ij_copy_owned_string_into_arena(ij_owned_string_t *out_string, const char *value,
+                                                   size_t len, size_t capacity,
+                                                   bool needs_json_escape, char **cursor)
+{
+    char *buffer = *cursor;
 
     memcpy(buffer, value, len);
     buffer[len] = '\0';
+
     out_string->data = buffer;
     out_string->len = len;
+    out_string->needs_json_escape = needs_json_escape;
+    *cursor += capacity + 1U;
     return IJ_STATUS_OK;
 }
 
-static ij_status_t ij_copy_attr_value(ij_owned_attr_value_t *out_value, const ij_attr_t *attribute)
+static ij_status_t ij_copy_attr_value_into_arena(ij_owned_attr_value_t *out_value,
+                                                 const ij_attr_t *attribute, bool needs_json_escape,
+                                                 char **cursor)
 {
     out_value->kind = attribute->value.kind;
 
     switch (attribute->value.kind) {
-    case IJ_ATTR_VALUE_STRING:
-        return ij_copy_owned_string(&out_value->as.string, attribute->value.as.string.data,
-                                    attribute->value.as.string.len);
+    case IJ_ATTR_VALUE_STRING: {
+        size_t capacity =
+            ij_max_size(attribute->value.as.string.len, (size_t)(sizeof(IJ_REDACTED_LITERAL) - 1U));
+
+        return ij_copy_owned_string_into_arena(&out_value->as.string,
+                                               attribute->value.as.string.data,
+                                               attribute->value.as.string.len, capacity,
+                                               needs_json_escape, cursor);
+    }
     case IJ_ATTR_VALUE_SIGNED:
         out_value->as.signed_value = attribute->value.as.signed_value;
         return IJ_STATUS_OK;
@@ -250,21 +279,7 @@ void ij_event_copy_dispose(ij_event_copy_t *event)
         return;
     }
 
-    free(event->event_name.data);
-    free(event->message.data);
-    free(event->logger_name.data);
-    free(event->source_file.data);
-    free(event->source_function.data);
-
-    if (event->attributes != NULL) {
-        for (size_t i = 0U; i < event->attribute_count; ++i) {
-            free(event->attributes[i].key.data);
-            if (event->attributes[i].value.kind == IJ_ATTR_VALUE_STRING) {
-                free(event->attributes[i].value.as.string.data);
-            }
-        }
-    }
-
+    free(event->text_arena);
     free(event->attributes);
     memset(event, 0, sizeof(*event));
 }
@@ -272,17 +287,126 @@ void ij_event_copy_dispose(ij_event_copy_t *event)
 ij_status_t ij_event_copy_from_input(ij_event_copy_t *out_event, const ij_event_t *event,
                                      ij_redaction_mode_t redaction_mode)
 {
+    const char *attr_keys[IJ_ATTRIBUTE_COUNT_MAX];
+    size_t attr_key_lens[IJ_ATTRIBUTE_COUNT_MAX];
+    bool attr_key_needs_json_escape[IJ_ATTRIBUTE_COUNT_MAX];
+    bool attr_string_needs_json_escape[IJ_ATTRIBUTE_COUNT_MAX];
+    bool attr_should_redact[IJ_ATTRIBUTE_COUNT_MAX];
+    char *cursor = NULL;
+    size_t total_text_size = 0U;
+    size_t event_name_len = 0U;
+    size_t message_len = 0U;
+    size_t logger_len = 0U;
+    size_t source_file_len = 0U;
+    size_t source_function_len = 0U;
     ij_status_t status;
 
-    if (out_event == NULL) {
+    if (out_event == NULL || event == NULL) {
         return IJ_STATUS_INVALID_ARGUMENT;
     }
 
     memset(out_event, 0, sizeof(*out_event));
+    memset(attr_keys, 0, sizeof(attr_keys));
+    memset(attr_key_lens, 0, sizeof(attr_key_lens));
+    memset(attr_key_needs_json_escape, 0, sizeof(attr_key_needs_json_escape));
+    memset(attr_string_needs_json_escape, 0, sizeof(attr_string_needs_json_escape));
+    memset(attr_should_redact, 0, sizeof(attr_should_redact));
 
-    status = ij_validate_event(event);
-    if (status != IJ_STATUS_OK) {
-        return status;
+    if (!ij_level_is_valid(event->level) || event->timestamp.nanoseconds >= 1000000000U ||
+        event->attribute_count > IJ_ATTRIBUTE_COUNT_MAX ||
+        (event->attribute_count > 0U && event->attributes == NULL) ||
+        (event->has_trace_context && (event->trace_id == NULL || event->span_id == NULL))) {
+        return IJ_STATUS_INVALID_ARGUMENT;
+    }
+    if (!ij_scan_string_field_copy(event->event_name, IJ_EVENT_NAME_MAX_LEN, false, &event_name_len,
+                                   &out_event->event_name.needs_json_escape) ||
+        !ij_scan_string_field_copy(event->message, IJ_MESSAGE_MAX_LEN, true, &message_len,
+                                   &out_event->message.needs_json_escape)) {
+        return IJ_STATUS_INVALID_ARGUMENT;
+    }
+    total_text_size += event_name_len + message_len;
+
+    if (event->logger != NULL) {
+        if (!ij_scan_string_field_copy(event->logger, IJ_LOGGER_NAME_MAX_LEN, false, &logger_len,
+                                       &out_event->logger_name.needs_json_escape)) {
+            return IJ_STATUS_INVALID_ARGUMENT;
+        }
+        total_text_size += logger_len;
+    }
+    if (event->source_file != NULL) {
+        if (!ij_scan_string_field_copy(event->source_file, IJ_EVENT_TEXT_MAX_LEN, false,
+                                       &source_file_len,
+                                       &out_event->source_file.needs_json_escape)) {
+            return IJ_STATUS_INVALID_ARGUMENT;
+        }
+        total_text_size += source_file_len;
+    }
+    if (event->source_function != NULL) {
+        if (!ij_scan_string_field_copy(event->source_function, IJ_EVENT_TEXT_MAX_LEN, false,
+                                       &source_function_len,
+                                       &out_event->source_function.needs_json_escape)) {
+            return IJ_STATUS_INVALID_ARGUMENT;
+        }
+        total_text_size += source_function_len;
+    }
+    if (total_text_size > IJ_EVENT_TEXT_MAX_LEN) {
+        return IJ_STATUS_INVALID_ARGUMENT;
+    }
+
+    out_event->text_arena_size = event_name_len + 1U + message_len + 1U;
+    if (event->logger != NULL) {
+        out_event->text_arena_size += logger_len + 1U;
+    }
+    if (event->source_file != NULL) {
+        out_event->text_arena_size += source_file_len + 1U;
+    }
+    if (event->source_function != NULL) {
+        out_event->text_arena_size += source_function_len + 1U;
+    }
+
+    for (size_t i = 0U; i < event->attribute_count; ++i) {
+        const ij_attr_t *attribute = &event->attributes[i];
+        size_t key_len = 0U;
+
+        if (!ij_scan_string_field_copy(attribute->key, IJ_ATTRIBUTE_KEY_MAX_LEN, false, &key_len,
+                                       &attr_key_needs_json_escape[i])) {
+            return IJ_STATUS_INVALID_ARGUMENT;
+        }
+        if (attribute->value.kind == IJ_ATTR_VALUE_STRING) {
+            if (!ij_validate_attr_string_copy(attribute->value.as.string.data,
+                                              attribute->value.as.string.len,
+                                              &attr_string_needs_json_escape[i])) {
+                return IJ_STATUS_INVALID_ARGUMENT;
+            }
+        } else if (!ij_validate_attr_value(&attribute->value)) {
+            return IJ_STATUS_INVALID_ARGUMENT;
+        }
+
+        for (size_t j = 0U; j < i; ++j) {
+            if (ij_attr_keys_equal(attribute->key, key_len, attr_keys[j], attr_key_lens[j])) {
+                return IJ_STATUS_INVALID_ARGUMENT;
+            }
+        }
+
+        attr_keys[i] = attribute->key;
+        attr_key_lens[i] = key_len;
+        attr_should_redact[i] = redaction_mode == IJ_REDACTION_MODE_ENABLED &&
+                                attribute->value.kind == IJ_ATTR_VALUE_STRING &&
+                                ij_key_should_redact_n(attribute->key, key_len);
+        total_text_size += key_len;
+        out_event->text_arena_size += key_len + 1U;
+
+        if (attribute->value.kind == IJ_ATTR_VALUE_STRING) {
+            size_t capacity = ij_max_size(attribute->value.as.string.len,
+                                          (size_t)(sizeof(IJ_REDACTED_LITERAL) - 1U));
+
+            total_text_size += attribute->value.as.string.len;
+            out_event->text_arena_size += capacity + 1U;
+        }
+
+        if (total_text_size > IJ_EVENT_TEXT_MAX_LEN) {
+            return IJ_STATUS_INVALID_ARGUMENT;
+        }
     }
 
     out_event->timestamp = event->timestamp;
@@ -296,39 +420,52 @@ ij_status_t ij_event_copy_from_input(ij_event_copy_t *out_event, const ij_event_
         memcpy(out_event->span_id, event->span_id, IJ_SPAN_ID_SIZE);
     }
 
-    status =
-        ij_copy_owned_string(&out_event->event_name, event->event_name, strlen(event->event_name));
+    out_event->text_arena = malloc(out_event->text_arena_size);
+    if (out_event->text_arena == NULL) {
+        status = IJ_STATUS_INTERNAL_ERROR;
+        goto fail;
+    }
+    cursor = out_event->text_arena;
+
+    status = ij_copy_owned_string_into_arena(&out_event->event_name, event->event_name,
+                                             event_name_len, event_name_len,
+                                             out_event->event_name.needs_json_escape, &cursor);
     if (status != IJ_STATUS_OK) {
         goto fail;
     }
-    status = ij_copy_owned_string(&out_event->message, event->message, strlen(event->message));
+    status = ij_copy_owned_string_into_arena(&out_event->message, event->message, message_len,
+                                             message_len, out_event->message.needs_json_escape,
+                                             &cursor);
     if (status != IJ_STATUS_OK) {
         goto fail;
     }
     if (event->logger != NULL) {
-        status =
-            ij_copy_owned_string(&out_event->logger_name, event->logger, strlen(event->logger));
+        status = ij_copy_owned_string_into_arena(&out_event->logger_name, event->logger, logger_len,
+                                                 logger_len,
+                                                 out_event->logger_name.needs_json_escape, &cursor);
         if (status != IJ_STATUS_OK) {
             goto fail;
         }
     }
     if (event->source_file != NULL) {
-        status = ij_copy_owned_string(&out_event->source_file, event->source_file,
-                                      strlen(event->source_file));
+        status = ij_copy_owned_string_into_arena(&out_event->source_file, event->source_file,
+                                                 source_file_len, source_file_len,
+                                                 out_event->source_file.needs_json_escape, &cursor);
         if (status != IJ_STATUS_OK) {
             goto fail;
         }
     }
     if (event->source_function != NULL) {
-        status = ij_copy_owned_string(&out_event->source_function, event->source_function,
-                                      strlen(event->source_function));
+        status = ij_copy_owned_string_into_arena(
+            &out_event->source_function, event->source_function, source_function_len,
+            source_function_len, out_event->source_function.needs_json_escape, &cursor);
         if (status != IJ_STATUS_OK) {
             goto fail;
         }
     }
 
     if (event->attribute_count > 0U) {
-        out_event->attributes = calloc(event->attribute_count, sizeof(*out_event->attributes));
+        out_event->attributes = malloc(event->attribute_count * sizeof(*out_event->attributes));
         if (out_event->attributes == NULL) {
             status = IJ_STATUS_INTERNAL_ERROR;
             goto fail;
@@ -337,19 +474,23 @@ ij_status_t ij_event_copy_from_input(ij_event_copy_t *out_event, const ij_event_
         for (size_t i = 0U; i < event->attribute_count; ++i) {
             const ij_attr_t *attribute = &event->attributes[i];
 
-            status = ij_copy_owned_string(&out_event->attributes[i].key, attribute->key,
-                                          strlen(attribute->key));
+            status = ij_copy_owned_string_into_arena(&out_event->attributes[i].key, attribute->key,
+                                                     attr_key_lens[i], attr_key_lens[i],
+                                                     attr_key_needs_json_escape[i], &cursor);
             if (status != IJ_STATUS_OK) {
                 goto fail;
             }
 
-            status = ij_copy_attr_value(&out_event->attributes[i].value, attribute);
+            status = ij_copy_attr_value_into_arena(&out_event->attributes[i].value, attribute,
+                                                   attr_string_needs_json_escape[i], &cursor);
             if (status != IJ_STATUS_OK) {
                 goto fail;
             }
 
-            if (redaction_mode == IJ_REDACTION_MODE_ENABLED) {
-                ij_redact_owned_attr_value(attribute->key, &out_event->attributes[i].value);
+            if (attr_should_redact[i]) {
+                memcpy(out_event->attributes[i].value.as.string.data, IJ_REDACTED_LITERAL,
+                       sizeof(IJ_REDACTED_LITERAL));
+                out_event->attributes[i].value.as.string.len = sizeof(IJ_REDACTED_LITERAL) - 1U;
             }
         }
 

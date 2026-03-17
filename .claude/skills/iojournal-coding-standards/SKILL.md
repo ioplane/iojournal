@@ -35,12 +35,15 @@ Use this skill to apply the repository's coding rules without letting performanc
 - Do not bypass redaction or secret-handling defaults.
 - Avoid blocking operations in producer paths.
 - Keep concurrency code explicit about ownership, ordering, and queue state transitions.
+- Keep scalar fallbacks correct before keeping ISA-specific fast paths.
 
 ## Test Expectations
 
 - Add or update tests for every behavior change.
 - Prefer sanitizer coverage for queueing, ownership, and memory-safety work.
 - For sink and encoder changes, verify both formatting rules and failure handling.
+- For performance work, rerun the full containerized `scripts/quality.sh` gate after each task.
+- Keep benchmark and profiler evidence aligned with code changes when the task is release-blocking.
 
 ## References
 

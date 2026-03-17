@@ -8,6 +8,7 @@
 #define IOJOURNAL_IOJOURNAL_H
 
 #include <iojournal/iojournal_file.h>
+#include <iojournal/iojournal_perf.h>
 #include <iojournal/iojournal_syslog.h>
 #include <iojournal/iojournal_types.h>
 
