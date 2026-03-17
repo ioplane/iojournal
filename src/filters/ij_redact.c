@@ -100,8 +100,16 @@ bool ij_key_should_redact_n(const char *key, size_t key_len)
         return false;
     }
 
-    return ij_redact_match_known_key(key, key_len) ||
-           (ij_redact_has_dot_scalar(key, key_len) && ij_redact_match_suffix(key, key_len));
+    if (ij_redact_match_known_key(key, key_len)) {
+        return true;
+    }
+
+    /* Suffix match requires at least "x.token" (7 bytes: 1 prefix + dot + 5 suffix) */
+    if (key_len <= 6U) {
+        return false;
+    }
+
+    return ij_redact_has_dot_scalar(key, key_len) && ij_redact_match_suffix(key, key_len);
 }
 
 bool ij_key_should_redact(const char *key)

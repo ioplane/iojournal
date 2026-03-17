@@ -17,7 +17,7 @@ bool ij_redact_case_equal_scalar(const char *lhs, size_t lhs_len, const char *rh
     }
 
     for (i = 0U; i < lhs_len; ++i) {
-        if (tolower((unsigned char)lhs[i]) != tolower((unsigned char)rhs[i])) {
+        if (tolower((unsigned char)lhs[i]) != (unsigned char)rhs[i]) {
             return false;
         }
     }
