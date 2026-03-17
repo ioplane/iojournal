@@ -13,6 +13,9 @@ ARG UFTRACE_VERSION=0.19
 ARG FTRACER_COMMIT=d24de224088c3f98333166a51d2c95815ba49829
 ARG LIBURING_VERSION=2.8
 ARG WOLFSSL_VERSION=5.7.0
+ARG SHELLCHECK_VERSION=0.11.0
+ARG LCOV_VERSION=2.3
+ARG CCACHE_VERSION=4.11.3
 ARG CPPCHECK_REPO=https://github.com/danmar/cppcheck.git
 
 # Enable CodeReady Builder repo (for -devel packages not in baseos/appstream)
@@ -52,6 +55,8 @@ RUN dnf install -y \
     bison \
     python3 \
     python3-pip \
+    doxygen \
+    graphviz \
     && dnf clean all
 
 # Compilers (from source / pre-built)
@@ -99,6 +104,25 @@ RUN pip3 install ninja flawfinder gcovr codechecker
 
 RUN ln -sf /usr/local/bin/CodeChecker /usr/local/bin/codechecker 2>/dev/null || true
 
+# ccache (not in OL10 repos — install from pre-built release)
+RUN cd /tmp && \
+    wget https://github.com/ccache/ccache/releases/download/v${CCACHE_VERSION}/ccache-${CCACHE_VERSION}-linux-x86_64.tar.xz && \
+    tar xJf ccache-${CCACHE_VERSION}-linux-x86_64.tar.xz && \
+    install -m 755 ccache-${CCACHE_VERSION}-linux-x86_64/ccache /usr/local/bin/ccache && \
+    cd /tmp && rm -rf ccache-*
+
+# lcov Perl dependencies (not in OL10 repos as RPM — install via CPAN + dnf)
+RUN dnf install -y perl-Time-HiRes perl-Digest-MD5 perl-JSON perl-CPAN && dnf clean all && \
+    cpan -T Capture::Tiny DateTime
+
+# lcov (build from source — not available as RPM on OL10)
+RUN cd /tmp && \
+    wget https://github.com/linux-test-project/lcov/releases/download/v${LCOV_VERSION}/lcov-${LCOV_VERSION}.tar.gz && \
+    tar xzf lcov-${LCOV_VERSION}.tar.gz && \
+    cd lcov-${LCOV_VERSION} && \
+    make install PREFIX=/usr/local && \
+    cd /tmp && rm -rf lcov-*
+
 # CMake
 RUN cd /tmp && \
     wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.tar.gz && \
@@ -125,6 +149,11 @@ RUN cd /tmp && \
     tar xzf hyperfine-v${HYPERFINE_VERSION}-x86_64-unknown-linux-gnu.tar.gz && \
     install -m 755 hyperfine-v${HYPERFINE_VERSION}-x86_64-unknown-linux-gnu/hyperfine /usr/local/bin/hyperfine && \
     cd /tmp && rm -rf hyperfine-v${HYPERFINE_VERSION}-x86_64-unknown-linux-gnu*
+
+# shellcheck (shell script linter)
+RUN cd /tmp && \
+    curl -fsSL "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz" \
+        | tar -xJ --strip-components=1 -C /usr/local/bin shellcheck-v${SHELLCHECK_VERSION}/shellcheck
 
 # Unity testing framework
 RUN cd /tmp && \
@@ -218,4 +247,5 @@ RUN wget -qO /etc/yum.repos.d/viva64.repo https://cdn.pvs-studio.ru/etc/viva64.r
 # Update ldconfig cache
 RUN ldconfig
 
+WORKDIR /workspace
 CMD ["/bin/bash"]
