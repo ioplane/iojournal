@@ -1,296 +1,218 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 # Repository quality pipeline for iojournal.
 # Run inside the dev container. PVS credentials are loaded from the
 # environment when available; do not bake them into the image.
 set -euo pipefail
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
 
-PASS=0
-FAIL=0
-SKIP=0
-
-step() { printf "\n${CYAN}=== [%d/11] %s ===${NC}\n" "$1" "$2"; }
-ok()   { printf "${GREEN}PASS${NC}: %s\n" "$1"; PASS=$((PASS + 1)); }
-fail() { printf "${RED}FAIL${NC}: %s\n" "$1"; FAIL=$((FAIL + 1)); }
-skip() { printf "${YELLOW}SKIP${NC}: %s\n" "$1"; SKIP=$((SKIP + 1)); }
-
-has_cmake_surface() {
-    [[ -f CMakeLists.txt && -f CMakePresets.json ]]
-}
-
-BUILD_DIR="${BUILD_DIR:-build/clang-debug}"
-PRESET="${PRESET:-clang-debug}"
-NPROC="$(nproc)"
-ROOT_DIR="$(pwd -P)"
-THIRD_PARTY_DIR="${ROOT_DIR}/tests/third_party"
-
-step 1 "Repository baseline"
-if [[ -d .github && -f AGENTS.md && -f CLAUDE.md && -f CODEX.md ]]; then
-    ok "Repository baseline files present"
+# Source shared ioplane library (container or local fallback)
+# shellcheck disable=SC1091
+if [[ -f /usr/local/lib/ioplane/common.sh ]]; then
+    source /usr/local/lib/ioplane/common.sh
 else
-    fail "Missing baseline files (.github or root instructions)"
+    source "${SCRIPT_DIR}/lib/common.sh"
 fi
 
-step 2 "Stale parser identifier scan"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd -P)"
+readonly ROOT_DIR
+readonly BUILD_DIR="${BUILD_DIR:-build/clang-debug}"
+readonly PRESET="${PRESET:-clang-debug}"
+readonly THIRD_PARTY_DIR="${ROOT_DIR}/tests/third_party"
+readonly TOTAL_STEPS=12
+
+cd "${ROOT_DIR}"
+
+# ═══════════════════════════════════════════════════════
+# Step 1: Repository baseline
+# ═══════════════════════════════════════════════════════
+
+ioj_step 1 "${TOTAL_STEPS}" "Repository baseline"
+ioj_check_repo_baseline
+
+# ═══════════════════════════════════════════════════════
+# Step 2: Stale parser identifier scan
+# ═══════════════════════════════════════════════════════
+
+ioj_step 2 "${TOTAL_STEPS}" "Stale parser identifier scan"
 if rg -n 'iohttpparser|ihtp_|IHTP_|HTTP parser|scanner -> parser -> semantics' \
     --glob '!scripts/quality.sh' \
     .github scripts AGENTS.md CLAUDE.md CODEX.md >/dev/null 2>&1; then
-    fail "Found stale parser-specific identifiers"
+    ioj_record_fail "Found stale parser-specific identifiers"
 else
-    ok "No stale parser-specific identifiers"
+    ioj_record_pass "No stale parser-specific identifiers"
 fi
 
-step 3 "Documentation lint"
-if [[ -f scripts/lint-docs.py ]]; then
-    if python3 scripts/lint-docs.py; then
-        ok "Documentation lint clean"
-    else
-        fail "Documentation lint failed"
-    fi
-else
-    skip "Documentation linter not present"
-fi
+# ═══════════════════════════════════════════════════════
+# Step 3: Documentation lint
+# ═══════════════════════════════════════════════════════
 
-step 4 "Project bootstrap scripts"
+ioj_step 3 "${TOTAL_STEPS}" "Documentation lint"
+ioj_check_docs_lint
+
+# ═══════════════════════════════════════════════════════
+# Step 4: Project bootstrap scripts
+# ═══════════════════════════════════════════════════════
+
+ioj_step 4 "${TOTAL_STEPS}" "Project bootstrap scripts"
 if [[ -f scripts/run-release-gate.sh && -f scripts/run-coverage.sh && -f scripts/run-gcc-analyzer.sh && -f scripts/build-release-assets.sh ]]; then
-    ok "Required bootstrap scripts present"
+    ioj_record_pass "Required bootstrap scripts present"
 else
-    fail "Missing bootstrap scripts"
+    ioj_record_fail "Missing bootstrap scripts"
 fi
 
-step 5 "Configure and build"
-if has_cmake_surface; then
+# ═══════════════════════════════════════════════════════
+# Step 5: Configure, build, and verify examples
+# ═══════════════════════════════════════════════════════
+
+ioj_step 5 "${TOTAL_STEPS}" "Configure and build"
+if ioj_has_cmake_surface; then
     if cmake --preset "${PRESET}" --fresh && \
        cmake --build --preset "${PRESET}"; then
-        EXAMPLE_BIN="${BUILD_DIR}/examples/basic_console"
-        FILE_EXAMPLE_BIN="${BUILD_DIR}/examples/file_sink"
-        SYSLOG_UDP_EXAMPLE_BIN="${BUILD_DIR}/examples/syslog_udp"
-        SYSLOG_TCP_EXAMPLE_BIN="${BUILD_DIR}/examples/syslog_tcp"
-        if [[ -x "${EXAMPLE_BIN}" ]]; then
-            EXAMPLE_OUT="$("${EXAMPLE_BIN}" 2>&1)" || {
-                echo "${EXAMPLE_OUT}"
-                fail "Build succeeded but example execution failed"
-                EXAMPLE_OUT=""
+
+        # Console example
+        if [[ -x "${BUILD_DIR}/examples/basic_console" ]]; then
+            local_out=""
+            local_out="$("${BUILD_DIR}/examples/basic_console" 2>&1)" || {
+                printf '%s\n' "${local_out}"
+                ioj_record_fail "Build succeeded but example execution failed"
+                local_out=""
             }
-            if [[ -n "${EXAMPLE_OUT}" ]] && \
-                echo "${EXAMPLE_OUT}" | grep -q '"event_name":"example.start"'; then
-                ok "Build succeeded and example emitted console JSON"
-            elif [[ -n "${EXAMPLE_OUT}" ]]; then
-                echo "${EXAMPLE_OUT}"
-                fail "Build succeeded but example output contract changed"
+            if [[ -n "${local_out}" ]] && \
+                printf '%s\n' "${local_out}" | grep -q '"event_name":"example.start"'; then
+                ioj_record_pass "Build succeeded and example emitted console JSON"
+            elif [[ -n "${local_out}" ]]; then
+                printf '%s\n' "${local_out}"
+                ioj_record_fail "Build succeeded but example output contract changed"
             fi
-        elif [[ ! -x "${FILE_EXAMPLE_BIN}" ]]; then
-            ok "Build succeeded"
         fi
-        if [[ -x "${FILE_EXAMPLE_BIN}" ]]; then
-            FILE_EXAMPLE_PATH="$("${FILE_EXAMPLE_BIN}" 2>/tmp/iojournal-file-example.err)" || {
-                cat /tmp/iojournal-file-example.err
-                fail "Build succeeded but file sink example execution failed"
-                FILE_EXAMPLE_PATH=""
+
+        # File sink example
+        if [[ -x "${BUILD_DIR}/examples/file_sink" ]]; then
+            local_err="$(ioj_mktemp)"
+            local_path=""
+            local_path="$("${BUILD_DIR}/examples/file_sink" 2>"${local_err}")" || {
+                cat "${local_err}"
+                ioj_record_fail "Build succeeded but file sink example execution failed"
+                local_path=""
             }
-            rm -f /tmp/iojournal-file-example.err
-            if [[ -n "${FILE_EXAMPLE_PATH}" && -f "${FILE_EXAMPLE_PATH}" ]] && \
-                grep -q '"event_name":"example.file"' "${FILE_EXAMPLE_PATH}" && \
-                grep -q '"auth.token":"\[REDACTED\]"' "${FILE_EXAMPLE_PATH}"; then
-                rm -f "${FILE_EXAMPLE_PATH}"
-                ok "File sink example emitted NDJSON output"
-            elif [[ -n "${FILE_EXAMPLE_PATH}" ]]; then
-                if [[ -f "${FILE_EXAMPLE_PATH}" ]]; then
-                    cat "${FILE_EXAMPLE_PATH}"
-                    rm -f "${FILE_EXAMPLE_PATH}"
+            if [[ -n "${local_path}" && -f "${local_path}" ]] && \
+                grep -q '"event_name":"example.file"' "${local_path}" && \
+                grep -q '"auth.token":"\[REDACTED\]"' "${local_path}"; then
+                rm -f "${local_path}"
+                ioj_record_pass "File sink example emitted NDJSON output"
+            elif [[ -n "${local_path}" ]]; then
+                if [[ -f "${local_path}" ]]; then
+                    cat "${local_path}"
+                    rm -f "${local_path}"
                 fi
-                fail "Build succeeded but file sink example output contract changed"
+                ioj_record_fail "Build succeeded but file sink example output contract changed"
             fi
         fi
-        if [[ -x "${SYSLOG_UDP_EXAMPLE_BIN}" ]]; then
-            SYSLOG_UDP_OUT="$("${SYSLOG_UDP_EXAMPLE_BIN}" 2>&1)" || {
-                echo "${SYSLOG_UDP_OUT}"
-                fail "Build succeeded but syslog UDP example execution failed"
-                SYSLOG_UDP_OUT=""
+
+        # Syslog UDP example
+        if [[ -x "${BUILD_DIR}/examples/syslog_udp" ]]; then
+            local_out=""
+            local_out="$("${BUILD_DIR}/examples/syslog_udp" 2>&1)" || {
+                printf '%s\n' "${local_out}"
+                ioj_record_fail "Build succeeded but syslog UDP example execution failed"
+                local_out=""
             }
-            if [[ -n "${SYSLOG_UDP_OUT}" ]] && \
-                echo "${SYSLOG_UDP_OUT}" | grep -q '^<166>1 ' && \
-                echo "${SYSLOG_UDP_OUT}" | grep -q 'examples.syslog_udp - - - udp example payload'; then
-                ok "Syslog UDP example emitted RFC 5424 datagram"
-            elif [[ -n "${SYSLOG_UDP_OUT}" ]]; then
-                echo "${SYSLOG_UDP_OUT}"
-                fail "Build succeeded but syslog UDP example output contract changed"
+            if [[ -n "${local_out}" ]] && \
+                printf '%s\n' "${local_out}" | grep -q '^<166>1 ' && \
+                printf '%s\n' "${local_out}" | grep -q 'examples.syslog_udp - - - udp example payload'; then
+                ioj_record_pass "Syslog UDP example emitted RFC 5424 datagram"
+            elif [[ -n "${local_out}" ]]; then
+                printf '%s\n' "${local_out}"
+                ioj_record_fail "Build succeeded but syslog UDP example output contract changed"
             fi
         fi
-        if [[ -x "${SYSLOG_TCP_EXAMPLE_BIN}" ]]; then
-            SYSLOG_TCP_OUT="$("${SYSLOG_TCP_EXAMPLE_BIN}" 2>&1)" || {
-                echo "${SYSLOG_TCP_OUT}"
-                fail "Build succeeded but syslog TCP example execution failed"
-                SYSLOG_TCP_OUT=""
+
+        # Syslog TCP example
+        if [[ -x "${BUILD_DIR}/examples/syslog_tcp" ]]; then
+            local_out=""
+            local_out="$("${BUILD_DIR}/examples/syslog_tcp" 2>&1)" || {
+                printf '%s\n' "${local_out}"
+                ioj_record_fail "Build succeeded but syslog TCP example execution failed"
+                local_out=""
             }
-            if [[ -n "${SYSLOG_TCP_OUT}" ]] && \
-                echo "${SYSLOG_TCP_OUT}" | grep -Eq '^[0-9]+ <139>1 ' && \
-                echo "${SYSLOG_TCP_OUT}" | grep -q 'examples.syslog_tcp - - - tcp example payload'; then
-                ok "Syslog TCP example emitted RFC 6587 frame"
-            elif [[ -n "${SYSLOG_TCP_OUT}" ]]; then
-                echo "${SYSLOG_TCP_OUT}"
-                fail "Build succeeded but syslog TCP example output contract changed"
+            if [[ -n "${local_out}" ]] && \
+                printf '%s\n' "${local_out}" | grep -Eq '^[0-9]+ <139>1 ' && \
+                printf '%s\n' "${local_out}" | grep -q 'examples.syslog_tcp - - - tcp example payload'; then
+                ioj_record_pass "Syslog TCP example emitted RFC 6587 frame"
+            elif [[ -n "${local_out}" ]]; then
+                printf '%s\n' "${local_out}"
+                ioj_record_fail "Build succeeded but syslog TCP example output contract changed"
             fi
         fi
     else
-        fail "Build failed"
+        ioj_record_fail "Build failed"
     fi
 else
-    skip "CMake surface not initialized yet"
+    ioj_record_skip "CMake surface not initialized yet"
 fi
 
-step 6 "Unit tests"
-if has_cmake_surface; then
+# ═══════════════════════════════════════════════════════
+# Step 6: Unit tests
+# ═══════════════════════════════════════════════════════
+
+ioj_step 6 "${TOTAL_STEPS}" "Unit tests"
+if ioj_has_cmake_surface; then
     if ctest --preset "${PRESET}" --output-on-failure 2>&1; then
-        ok "All tests passed"
+        ioj_record_pass "All tests passed"
     else
-        fail "Some tests failed"
+        ioj_record_fail "Some tests failed"
     fi
 else
-    skip "CMake surface not initialized yet"
+    ioj_record_skip "CMake surface not initialized yet"
 fi
 
-step 7 "Format check"
-if has_cmake_surface; then
-    if cmake --build --preset "${PRESET}" --target format-check 2>&1; then
-        ok "Formatting clean"
-    else
-        fail "Formatting issues found"
-    fi
-else
-    skip "Format target unavailable before CMake bootstrap"
-fi
+# ═══════════════════════════════════════════════════════
+# Step 7: Format check
+# ═══════════════════════════════════════════════════════
 
-step 8 "cppcheck"
-if has_cmake_surface; then
-    if [[ ! -f "${BUILD_DIR}/compile_commands.json" ]]; then
-        fail "cppcheck: compile database missing"
-    elif command -v cppcheck >/dev/null 2>&1; then
-        if cppcheck --enable=warning,performance,portability \
-            --error-exitcode=1 --inline-suppr \
-            --project="${BUILD_DIR}/compile_commands.json" \
-            --suppress='*:/usr/local/src/unity/*' \
-            -q 2>&1; then
-            ok "cppcheck clean"
-        else
-            fail "cppcheck found issues"
-        fi
-    else
-        skip "cppcheck not installed"
-    fi
-else
-    skip "Compile database unavailable before CMake bootstrap"
-fi
+ioj_step 7 "${TOTAL_STEPS}" "Format check"
+ioj_check_format "${PRESET}"
 
-step 9 "PVS-Studio"
-if has_cmake_surface; then
-    if [[ ! -f "${BUILD_DIR}/compile_commands.json" ]]; then
-        fail "PVS-Studio: compile database missing"
-    elif command -v pvs-studio-analyzer >/dev/null 2>&1; then
-        if [[ -z "${PVS_NAME:-}" || -z "${PVS_KEY:-}" ]]; then
-            skip "PVS-Studio: missing PVS_NAME/PVS_KEY in environment"
-        else
-            pvs-studio-analyzer credentials "${PVS_NAME}" "${PVS_KEY}" >/dev/null 2>&1
-            PVS_LOG="${BUILD_DIR}/pvs-studio.log"
-            if pvs-studio-analyzer analyze \
-                -f "${BUILD_DIR}/compile_commands.json" \
-                -o "${PVS_LOG}" \
-                -e /usr/local/src/unity/ \
-                -j"${NPROC}" 2>&1 | grep -v '^\['; then
-                PVS_OUT=$(plog-converter -t errorfile -a 'GA:1,2' "${PVS_LOG}" 2>/dev/null \
-                    | grep -v '^pvs-studio.com' | grep -v '^Analyzer log' \
-                    | grep -v '^PVS-Studio is' | grep -v '^$' \
-                    | grep -v 'Total messages' | grep -v 'Filtered messages' \
-                    | grep -v '^Copyright' \
-                    | grep -v 'V1042' || true)
-                PVS_COUNT=$(echo "${PVS_OUT}" | grep -cE '(error|warning):' || true)
-                if [[ "${PVS_COUNT}" -eq 0 ]]; then
-                    ok "PVS-Studio clean (GA:1,2)"
-                else
-                    echo "${PVS_OUT}"
-                    fail "PVS-Studio: ${PVS_COUNT} errors/warnings"
-                fi
-            else
-                fail "PVS-Studio analysis failed"
-            fi
-        fi
-    else
-        skip "PVS-Studio not installed"
-    fi
-else
-    skip "Compile database unavailable before CMake bootstrap"
-fi
+# ═══════════════════════════════════════════════════════
+# Step 8: cppcheck
+# ═══════════════════════════════════════════════════════
 
-step 10 "GCC analyzer"
-if has_cmake_surface; then
-    if [[ -f scripts/run-gcc-analyzer.sh ]]; then
-        if bash scripts/run-gcc-analyzer.sh >/tmp/iojournal-gcc-analyzer.log 2>&1; then
-            ok "GCC analyzer lane clean"
-        else
-            cat /tmp/iojournal-gcc-analyzer.log
-            fail "GCC analyzer lane failed"
-        fi
-    else
-        fail "GCC analyzer script missing"
-    fi
-else
-    skip "Compile database unavailable before CMake bootstrap"
-fi
+ioj_step 8 "${TOTAL_STEPS}" "cppcheck"
+ioj_check_cppcheck "${BUILD_DIR}"
 
-step 11 "CodeChecker"
-if has_cmake_surface; then
-    if [[ ! -f "${BUILD_DIR}/compile_commands.json" ]]; then
-        fail "CodeChecker: compile database missing"
-    elif command -v CodeChecker >/dev/null 2>&1; then
-        CC_DIR=$(mktemp -d)
-        CC_SKIP=$(mktemp)
-        cat > "${CC_SKIP}" <<SKIP
--/usr/local/src/unity/*
--${THIRD_PARTY_DIR}/*
-SKIP
-        if CodeChecker analyze "${BUILD_DIR}/compile_commands.json" \
-            -o "${CC_DIR}" \
-            --analyzers clangsa clang-tidy \
-            --skip "${CC_SKIP}" \
-            -j"${NPROC}"; then
-            CC_PARSE=$(CodeChecker parse "${CC_DIR}" \
-                --trim-path-prefix "$(pwd)/" 2>&1 || true)
-            CC_PARSE=$(echo "${CC_PARSE}" \
-                | grep -v '^\[INFO\]' \
-                | grep -v '^$' \
-                | grep -v '/usr/local/src/unity/' \
-                | grep -v "${THIRD_PARTY_DIR}/" || true)
-            CC_HIGH=$(echo "${CC_PARSE}" | grep -c '\[HIGH\]' || true)
-            CC_MED=$(echo "${CC_PARSE}" | grep -c '\[MEDIUM\]' || true)
-            if [[ "${CC_HIGH}" -gt 0 || "${CC_MED}" -gt 0 ]]; then
-                echo "${CC_PARSE}" | grep -E '\[(HIGH|MEDIUM)\]' || true
-                fail "CodeChecker: ${CC_HIGH} HIGH, ${CC_MED} MEDIUM"
-            else
-                ok "CodeChecker clean (no HIGH/MEDIUM)"
-            fi
-        else
-            fail "CodeChecker analysis failed"
-        fi
-        rm -rf "${CC_DIR}" "${CC_SKIP}"
-    else
-        skip "CodeChecker not installed"
-    fi
-else
-    skip "Compile database unavailable before CMake bootstrap"
-fi
+# ═══════════════════════════════════════════════════════
+# Step 9: PVS-Studio
+# ═══════════════════════════════════════════════════════
 
-printf "\n${CYAN}=== Summary ===${NC}\n"
-printf "${GREEN}PASS: %d${NC}  ${RED}FAIL: %d${NC}  ${YELLOW}SKIP: %d${NC}\n" \
-    "${PASS}" "${FAIL}" "${SKIP}"
+ioj_step 9 "${TOTAL_STEPS}" "PVS-Studio"
+ioj_check_pvs_studio "${BUILD_DIR}"
 
-if [[ "${FAIL}" -gt 0 ]]; then
-    printf "${RED}Quality pipeline FAILED${NC}\n"
-    exit 1
-fi
+# ═══════════════════════════════════════════════════════
+# Step 10: GCC analyzer
+# ═══════════════════════════════════════════════════════
 
-printf "${GREEN}Quality pipeline PASSED${NC}\n"
+ioj_step 10 "${TOTAL_STEPS}" "GCC analyzer"
+ioj_check_gcc_analyzer
+
+# ═══════════════════════════════════════════════════════
+# Step 11: CodeChecker
+# ═══════════════════════════════════════════════════════
+
+ioj_step 11 "${TOTAL_STEPS}" "CodeChecker"
+ioj_check_codechecker "${BUILD_DIR}" "${THIRD_PARTY_DIR}"
+
+# ═══════════════════════════════════════════════════════
+# Step 12: shellcheck
+# ═══════════════════════════════════════════════════════
+
+ioj_step 12 "${TOTAL_STEPS}" "Shellcheck"
+ioj_check_shellcheck
+
+# ═══════════════════════════════════════════════════════
+# Summary
+# ═══════════════════════════════════════════════════════
+
+ioj_print_summary

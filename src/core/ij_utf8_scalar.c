@@ -28,10 +28,13 @@ bool ij_utf8_scalar_validate(const char *data, size_t len)
         }
 
         if ((c & 0xf0U) == 0xe0U) {
+            if (remaining < 3U) {
+                return false;
+            }
             unsigned char c1 = (unsigned char)data[i + 1U];
             unsigned char c2 = (unsigned char)data[i + 2U];
 
-            if (remaining < 3U || (c1 & 0xc0U) != 0x80U || (c2 & 0xc0U) != 0x80U) {
+            if ((c1 & 0xc0U) != 0x80U || (c2 & 0xc0U) != 0x80U) {
                 return false;
             }
             if ((c == 0xe0U && c1 < 0xa0U) || (c == 0xedU && c1 >= 0xa0U)) {
@@ -42,12 +45,14 @@ bool ij_utf8_scalar_validate(const char *data, size_t len)
         }
 
         if ((c & 0xf8U) == 0xf0U) {
+            if (remaining < 4U) {
+                return false;
+            }
             unsigned char c1 = (unsigned char)data[i + 1U];
             unsigned char c2 = (unsigned char)data[i + 2U];
             unsigned char c3 = (unsigned char)data[i + 3U];
 
-            if (remaining < 4U || (c1 & 0xc0U) != 0x80U || (c2 & 0xc0U) != 0x80U ||
-                (c3 & 0xc0U) != 0x80U) {
+            if ((c1 & 0xc0U) != 0x80U || (c2 & 0xc0U) != 0x80U || (c3 & 0xc0U) != 0x80U) {
                 return false;
             }
             if ((c == 0xf0U && c1 < 0x90U) || (c == 0xf4U && c1 >= 0x90U) || c > 0xf4U) {

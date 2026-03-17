@@ -1,8 +1,22 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
+# Clones or updates tier-1 competitor repositories for benchmarking.
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SRC_ROOT="${SRC_ROOT:-$ROOT_DIR/docs/tmp/competitors/src}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+
+# shellcheck source=lib/common.sh disable=SC1091
+if [[ -f /usr/local/lib/ioplane/common.sh ]]; then
+    source /usr/local/lib/ioplane/common.sh
+else
+    source "${SCRIPT_DIR}/lib/common.sh"
+fi
+
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+readonly ROOT_DIR
+
+readonly SRC_ROOT="${SRC_ROOT:-${ROOT_DIR}/docs/tmp/competitors/src}"
 
 ensure_repo() {
     local name="$1"

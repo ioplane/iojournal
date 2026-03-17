@@ -1,10 +1,22 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SRC_ROOT="${SRC_ROOT:-$ROOT_DIR/docs/tmp/competitors/src}"
-BUILD_ROOT="${BUILD_ROOT:-$ROOT_DIR/build/tier1/build}"
-INSTALL_ROOT="${INSTALL_ROOT:-$ROOT_DIR/build/tier1/install}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+if [[ -f /usr/local/lib/ioplane/common.sh ]]; then
+    # shellcheck source=/dev/null
+    source /usr/local/lib/ioplane/common.sh
+else
+    # shellcheck source=lib/common.sh disable=SC1091
+    source "${SCRIPT_DIR}/lib/common.sh"
+fi
+
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+readonly ROOT_DIR
+readonly SRC_ROOT="${SRC_ROOT:-${ROOT_DIR}/docs/tmp/competitors/src}"
+readonly BUILD_ROOT="${BUILD_ROOT:-${ROOT_DIR}/build/tier1/build}"
+readonly INSTALL_ROOT="${INSTALL_ROOT:-${ROOT_DIR}/build/tier1/install}"
 
 bash "${ROOT_DIR}/scripts/fetch-tier1-competitors.sh"
 
@@ -91,6 +103,7 @@ build_zlog
 build_stumpless
 build_tinylog
 
+# shellcheck disable=SC2016
 {
     printf '# Tier 1 Competitor Install Roots\n\n'
     printf '| Library | Install Prefix |\n'

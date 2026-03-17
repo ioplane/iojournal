@@ -88,6 +88,12 @@ static void ij_apply_logger_defaults(ij_logger_t *logger, const ij_logger_config
     if (logger->config.queue_capacity == 0U) {
         logger->config.queue_capacity = IJ_QUEUE_CAPACITY_DEFAULT;
     }
+    if (config->logger_name != NULL) {
+        logger->config.logger_name = strdup(config->logger_name);
+    }
+    if (config->syslog_host != NULL) {
+        logger->config.syslog_host = strdup(config->syslog_host);
+    }
     logger->active = true;
 }
 
@@ -112,6 +118,13 @@ ij_status_t ij_logger_init(ij_logger_t **out_logger, const ij_logger_config_t *c
     }
 
     ij_apply_logger_defaults(logger, config);
+    if ((config->logger_name != NULL && logger->config.logger_name == NULL) ||
+        (config->syslog_host != NULL && logger->config.syslog_host == NULL)) {
+        free((void *)logger->config.logger_name);
+        free((void *)logger->config.syslog_host);
+        free(logger);
+        return IJ_STATUS_INTERNAL_ERROR;
+    }
     status = ij_ring_init(&logger->ring, logger->config.queue_capacity);
     if (status != IJ_STATUS_OK) {
         free(logger);
@@ -162,6 +175,8 @@ ij_status_t ij_logger_shutdown(ij_logger_t *logger)
     ij_file_sink_close(&logger->file_sink);
     ij_syslog_sink_close(&logger->syslog_sink);
     ij_ring_destroy(&logger->ring);
+    free((void *)logger->config.logger_name);
+    free((void *)logger->config.syslog_host);
     free(logger);
     return IJ_STATUS_OK;
 }

@@ -147,6 +147,7 @@ static bool ij_file_sink_rotation_due(const ij_file_sink_t *sink, size_t next_pa
         return true;
     }
     if (sink->rotate_interval_seconds > 0U && sink->bytes_written > 0U &&
+        now > sink->last_rotation_epoch &&
         (uint64_t)(now - sink->last_rotation_epoch) >= sink->rotate_interval_seconds) {
         return true;
     }

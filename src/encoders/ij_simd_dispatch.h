@@ -53,6 +53,9 @@ static inline ij_simd_kind_t ij_simd_json_escape_kind(void)
     if (ij_simd_runtime_has_x86_avx2()) {
         return IJ_SIMD_KIND_X86_AVX2;
     }
+    if (ij_simd_runtime_has_arm_neon()) {
+        return IJ_SIMD_KIND_ARM_NEON;
+    }
 
     return IJ_SIMD_KIND_SCALAR;
 }
@@ -66,6 +69,9 @@ static inline ij_simd_kind_t ij_simd_utf8_kind(void)
 {
     if (ij_simd_runtime_has_x86_avx2()) {
         return IJ_SIMD_KIND_X86_AVX2;
+    }
+    if (ij_simd_runtime_has_arm_neon()) {
+        return IJ_SIMD_KIND_ARM_NEON;
     }
 
     return IJ_SIMD_KIND_SCALAR;

@@ -2,6 +2,7 @@
 
 #include <unity/unity.h>
 
+#include <math.h>
 #include <string.h>
 
 static ij_event_t ij_test_minimal_event(const ij_attr_t *attributes, size_t attribute_count)
@@ -229,6 +230,82 @@ void test_event_copy_tracks_json_escape_flags_for_ascii_and_special_fields(void)
     ij_event_copy_dispose(&copied_event);
 }
 
+void test_event_copy_rejects_nan_double_attribute(void)
+{
+    ij_attr_t attrs[] = {
+        {.key = "metric", .value = {.kind = IJ_ATTR_VALUE_DOUBLE, .as.double_value = NAN}},
+    };
+    ij_event_t event = ij_test_minimal_event(attrs, 1U);
+    ij_event_copy_t copy = {0};
+
+    TEST_ASSERT_EQUAL_INT(IJ_STATUS_INVALID_ARGUMENT,
+                          ij_event_copy_from_input(&copy, &event, IJ_REDACTION_MODE_ENABLED));
+}
+
+void test_event_copy_rejects_infinity_double_attribute(void)
+{
+    ij_attr_t attrs[] = {
+        {.key = "metric", .value = {.kind = IJ_ATTR_VALUE_DOUBLE, .as.double_value = INFINITY}},
+    };
+    ij_event_t event = ij_test_minimal_event(attrs, 1U);
+    ij_event_copy_t copy = {0};
+
+    TEST_ASSERT_EQUAL_INT(IJ_STATUS_INVALID_ARGUMENT,
+                          ij_event_copy_from_input(&copy, &event, IJ_REDACTION_MODE_ENABLED));
+}
+
+void test_event_copy_rejects_null_string_attribute_data(void)
+{
+    ij_attr_t attrs[] = {
+        {.key = "broken",
+         .value = {.kind = IJ_ATTR_VALUE_STRING, .as.string = {.data = NULL, .len = 5U}}},
+    };
+    ij_event_t event = ij_test_minimal_event(attrs, 1U);
+    ij_event_copy_t copy = {0};
+
+    TEST_ASSERT_EQUAL_INT(IJ_STATUS_INVALID_ARGUMENT,
+                          ij_event_copy_from_input(&copy, &event, IJ_REDACTION_MODE_ENABLED));
+}
+
+void test_event_copy_rejects_oversized_string_attribute(void)
+{
+    static char buf[IJ_ATTRIBUTE_STRING_MAX_LEN + 2U];
+    memset(buf, 'a', sizeof(buf) - 1U);
+    buf[sizeof(buf) - 1U] = '\0';
+
+    ij_attr_t attrs[] = {
+        {.key = "big",
+         .value = {.kind = IJ_ATTR_VALUE_STRING,
+                   .as.string = {.data = buf, .len = IJ_ATTRIBUTE_STRING_MAX_LEN + 1U}}},
+    };
+    ij_event_t event = ij_test_minimal_event(attrs, 1U);
+    ij_event_copy_t copy = {0};
+
+    TEST_ASSERT_EQUAL_INT(IJ_STATUS_INVALID_ARGUMENT,
+                          ij_event_copy_from_input(&copy, &event, IJ_REDACTION_MODE_ENABLED));
+}
+
+void test_event_copy_rejects_unknown_attribute_kind(void)
+{
+    ij_attr_t attrs[] = {
+        {.key = "invalid", .value = {.kind = (ij_attr_value_kind_t)99}},
+    };
+    ij_event_t event = ij_test_minimal_event(attrs, 1U);
+    ij_event_copy_t copy = {0};
+
+    TEST_ASSERT_EQUAL_INT(IJ_STATUS_INVALID_ARGUMENT,
+                          ij_event_copy_from_input(&copy, &event, IJ_REDACTION_MODE_ENABLED));
+}
+
+void test_event_copy_rejects_excess_attribute_count(void)
+{
+    ij_event_t event = ij_test_minimal_event(NULL, IJ_ATTRIBUTE_COUNT_MAX + 1U);
+    ij_event_copy_t copy = {0};
+
+    TEST_ASSERT_EQUAL_INT(IJ_STATUS_INVALID_ARGUMENT,
+                          ij_event_copy_from_input(&copy, &event, IJ_REDACTION_MODE_ENABLED));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -241,5 +318,11 @@ int main(void)
     RUN_TEST(test_event_copy_packs_text_fields_into_one_arena);
     RUN_TEST(test_event_copy_dispose_clears_packed_storage);
     RUN_TEST(test_event_copy_tracks_json_escape_flags_for_ascii_and_special_fields);
+    RUN_TEST(test_event_copy_rejects_nan_double_attribute);
+    RUN_TEST(test_event_copy_rejects_infinity_double_attribute);
+    RUN_TEST(test_event_copy_rejects_null_string_attribute_data);
+    RUN_TEST(test_event_copy_rejects_oversized_string_attribute);
+    RUN_TEST(test_event_copy_rejects_unknown_attribute_kind);
+    RUN_TEST(test_event_copy_rejects_excess_attribute_count);
     return UNITY_END();
 }

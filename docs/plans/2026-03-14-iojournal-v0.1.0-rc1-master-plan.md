@@ -29,11 +29,13 @@
 | 11C | structural hot-path redesign, refreshed benchmark and profiler evidence | structural-optimization evidence pack |
 | 11D | contract-preserving fast paths, refreshed benchmark and profiler evidence | fast-path optimization evidence pack |
 | 12 | final publish criteria, evidence review, tag/release prep | `v0.1.0-rc.1` publish decision |
+| 13 | critical/high bug fixes, concurrency/UTF-8/SIMD/encoder tests | audit hardening evidence pack |
+| 14 | Bash 5.1+ rewrite, shellcheck 0.11.0 compliance, shared lib | shell modernization evidence pack |
 
 ## Current Program Status
 
-- Sprint 01 through Sprint 11C are complete.
-- Sprint 11D is complete and active. The optimization evidence pack is:
+- Sprint 01 through Sprint 12 Task 0 are complete.
+- Sprint 11D optimization evidence is the active source of record. The optimization evidence pack is:
   - local benchmark run [`20260316-210134`](/opt/projects/repositories/iojournal/docs/tmp/benchmarks/20260316-210134)
   - Tier 1 benchmark run [`20260316-150320`](/opt/projects/repositories/iojournal/docs/tmp/benchmarks/20260316-150320)
   - callgrind and repeatability pack [`20260316-210204`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210204)

@@ -19,6 +19,8 @@ These files are the detailed execution plans for the `v0.1.0-rc.1` program.
 13. `2026-03-16-sprint-11c-structural-hot-path-redesign.md`
 14. `2026-03-16-sprint-11d-contract-preserving-fast-paths.md`
 15. `2026-03-16-sprint-12-final-rc-decision-and-publication.md`
+16. `2026-03-17-sprint-13-audit-bug-fixes-and-test-hardening.md`
+17. `2026-03-17-sprint-14-shell-script-modernization.md`
 
 ## Usage
 
@@ -46,4 +48,6 @@ These files are the detailed execution plans for the `v0.1.0-rc.1` program.
 - Sprint 11B is complete and hands off to the next optimization tranche.
 - Sprint 11C is complete and hands off to the next optimization tranche.
 - Sprint 11D is complete and passed evidence refresh.
-- Sprint 12 is the remaining publication gate.
+- Sprint 12 Task 0 is complete; publication hardening continues pending remote gate.
+- Sprint 13 is complete: 6 bug fixes (2 CRITICAL, 4 HIGH), 33 new tests, quality gate PASS 14/14.
+- Sprint 14 is complete: 14 scripts rewritten, shared library created, shellcheck gate added, quality gate PASS 15/15.

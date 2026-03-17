@@ -31,9 +31,11 @@ During bootstrap stages, use `./scripts/quality.sh` for the repository-level che
 
 ## Dev Container
 
-- Build: `podman build -t iojournal-dev:latest -f deploy/podman/Containerfile .`
+- Base image: `podman build -t ioplane-base:latest -f /opt/projects/repositories/container-images/tools/ioplane-base/Containerfile .`
+- Project image: `podman build -t iojournal-dev:latest -f deploy/podman/Containerfile .`
 - Run: `podman run --rm -it -v $(pwd):/workspace:Z iojournal-dev:latest`
 - Perf and `io_uring` lane: `bash scripts/run-podman-perf-lane.sh bash`
+- All `io*` projects share `localhost/ioplane-base:latest` as the common toolchain layer.
 - Prefer doing development and quality checks inside the container.
 - Use the dedicated perf lane for `io_uring`, `uftrace`, `gdb`, and other ptrace-sensitive runs.
 - After each performance task, rerun the full `scripts/quality.sh` gate inside Podman.

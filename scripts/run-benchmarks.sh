@@ -1,17 +1,30 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PRESET="${PRESET:-clang-debug}"
-BUILD_DIR="${BUILD_DIR:-$ROOT_DIR/build/${PRESET}}"
-RESULTS_ROOT="${RESULTS_ROOT:-$ROOT_DIR/docs/tmp/benchmarks}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+if [[ -f /usr/local/lib/ioplane/common.sh ]]; then
+    # shellcheck source=/dev/null
+    source /usr/local/lib/ioplane/common.sh
+else
+    # shellcheck source=lib/common.sh disable=SC1091
+    source "${SCRIPT_DIR}/lib/common.sh"
+fi
+
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+readonly ROOT_DIR
+readonly PRESET="${PRESET:-clang-debug}"
+readonly BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build/${PRESET}}"
+readonly RESULTS_ROOT="${RESULTS_ROOT:-${ROOT_DIR}/docs/tmp/benchmarks}"
 RUN_ID="${RUN_ID:-$(date +%Y%m%d-%H%M%S)}"
-RUN_DIR="${RESULTS_ROOT}/${RUN_ID}"
-HOT_ITERATIONS="${HOT_ITERATIONS:-50000}"
-FILE_ITERATIONS="${FILE_ITERATIONS:-${HOT_ITERATIONS}}"
-SYSLOG_ITERATIONS="${SYSLOG_ITERATIONS:-5000}"
-SCENARIO_STATUS_FILE="${RUN_DIR}/scenario-status.tsv"
-MANIFEST_FILE="${RUN_DIR}/manifest.md"
+readonly RUN_ID
+readonly RUN_DIR="${RESULTS_ROOT}/${RUN_ID}"
+readonly HOT_ITERATIONS="${HOT_ITERATIONS:-50000}"
+readonly FILE_ITERATIONS="${FILE_ITERATIONS:-${HOT_ITERATIONS}}"
+readonly SYSLOG_ITERATIONS="${SYSLOG_ITERATIONS:-5000}"
+readonly SCENARIO_STATUS_FILE="${RUN_DIR}/scenario-status.tsv"
+readonly MANIFEST_FILE="${RUN_DIR}/manifest.md"
 
 mkdir -p "${RUN_DIR}"
 
@@ -44,6 +57,7 @@ medium_message_with_metadata	shared	active
 contention_mpsc	shared	active
 EOF
 
+# shellcheck disable=SC2016
 {
     printf '# Benchmark Run Manifest\n\n'
     printf '| Field | Value |\n'
@@ -78,7 +92,9 @@ for artifact in \
     "${RUN_DIR}/bench_hot_path.tsv" \
     "${RUN_DIR}/bench_file_sink.tsv" \
     "${RUN_DIR}/bench_syslog_udp.tsv"; do
+    # shellcheck disable=SC2016
     grep -q $'^format\ttsv\tv1$' "${artifact}"
+    # shellcheck disable=SC2016
     grep -q $'^columns\tbenchmark\tscenario\titerations\telapsed_ns\tns_per_op$' "${artifact}"
 done
 

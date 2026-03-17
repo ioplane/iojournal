@@ -122,8 +122,10 @@ bool ij_level_is_enabled(ij_level_t min_level, ij_level_t event_level);
 const char *ij_level_to_text(ij_level_t level);
 bool ij_key_should_redact_n(const char *key, size_t key_len);
 bool ij_key_should_redact(const char *key);
-void ij_redact_owned_attr_value_n(const char *key, size_t key_len, ij_owned_attr_value_t *value);
-void ij_redact_owned_attr_value(const char *key, ij_owned_attr_value_t *value);
+void ij_redact_owned_attr_value_n(const char *key, size_t key_len, ij_owned_attr_value_t *value,
+                                  size_t value_capacity);
+void ij_redact_owned_attr_value(const char *key, ij_owned_attr_value_t *value,
+                                size_t value_capacity);
 ij_status_t ij_validate_logger_config(const ij_logger_config_t *config);
 ij_status_t ij_validate_event(const ij_event_t *event);
 ij_status_t ij_event_copy_from_input(ij_event_copy_t *out_event, const ij_event_t *event,

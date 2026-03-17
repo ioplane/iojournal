@@ -72,17 +72,20 @@ The release gate is sequential:
 | 11C | Structural hot-path redesign | release-blocking fused validation/copy, length-aware encode, formatting, and redaction-dispatch work |
 | 11D | Contract-preserving fast paths | release-blocking fixed-fragment JSON shaping, event-copy tightening, selective redaction reassessment, and refreshed evidence |
 | 12 | Final RC decision and publication | publish/no-publish decision, final release evidence, and tag/release preparation |
+| 13 | Audit bug fixes and test hardening | critical/high-severity bug fixes from independent audit, concurrency tests, UTF-8 tests, SIMD equivalence tests, encoder overflow tests |
+| 14 | Shell script modernization | all 14 scripts rewritten to Bash 5.1+ with shellcheck 0.11.0 compliance, shared library, shellcheck quality gate step |
 
 ## Current Execution Status
 
-- Sprint 01 through Sprint 11D are complete.
-- Active source-of-record artifacts are now:
+- Sprint 01 through Sprint 14 are complete.
+- Sprint 13 fixed 6 bugs (2 CRITICAL, 4 HIGH) and added 33 tests. Quality gate: PASS 14/14, ctest 17/17.
+- Sprint 14 rewrote all 14 shell scripts to Bash 5.1+ with shellcheck 0.11.0 compliance. Added `scripts/lib/common.sh` shared library and shellcheck quality gate step. Quality gate: PASS 15/15.
+- Active source-of-record artifacts remain:
   - local benchmark source of record [`20260316-210134`](/opt/projects/repositories/iojournal/docs/tmp/benchmarks/20260316-210134)
   - Tier 1 comparison [`20260316-150320`](/opt/projects/repositories/iojournal/docs/tmp/benchmarks/20260316-150320)
   - callgrind and repeatability pack [`20260316-210204`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210204)
   - `uftrace` companion runs [`20260316-210329`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210329), [`20260316-210345`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210345), and [`20260316-210349`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210349)
-- Sprint 12 publication hardening is unblocked from a local evidence perspective and proceeds to final gate execution.
-- The current publication decision for `v0.1.0-rc.1` remains `NO-PUBLISH`; see [`docs/en/06-rc1-publish-decision.md`](/opt/projects/repositories/iojournal/docs/en/06-rc1-publish-decision.md).
+- The current publication decision for `v0.1.0-rc.1` remains `NO-PUBLISH` pending final remote workflow gate; see [`docs/en/06-rc1-publish-decision.md`](/opt/projects/repositories/iojournal/docs/en/06-rc1-publish-decision.md).
 
 ## Milestones
 

@@ -1,14 +1,29 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
+# Generates dist/RELEASE_NOTES.md for the given tag.
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DIST_DIR="${ROOT_DIR}/dist"
-TAG_NAME="${1:-${GITHUB_REF_NAME:-dev}}"
-RC_RUN_ID="bootstrap-not-run"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
 
-if [[ -f "${ROOT_DIR}/dist/release-candidate/latest.txt" ]]; then
-  RC_RUN_ID="$(cat "${ROOT_DIR}/dist/release-candidate/latest.txt")"
+# shellcheck source=lib/common.sh disable=SC1091
+if [[ -f /usr/local/lib/ioplane/common.sh ]]; then
+    source /usr/local/lib/ioplane/common.sh
+else
+    source "${SCRIPT_DIR}/lib/common.sh"
 fi
+
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+readonly ROOT_DIR
+
+readonly DIST_DIR="${ROOT_DIR}/dist"
+readonly TAG_NAME="${1:-${GITHUB_REF_NAME:-dev}}"
+
+RC_RUN_ID="bootstrap-not-run"
+if [[ -f "${ROOT_DIR}/dist/release-candidate/latest.txt" ]]; then
+    RC_RUN_ID="$(cat "${ROOT_DIR}/dist/release-candidate/latest.txt")"
+fi
+readonly RC_RUN_ID
 
 mkdir -p "${DIST_DIR}"
 
