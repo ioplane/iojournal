@@ -1,20 +1,33 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PRESET="${PRESET:-clang-perf}"
-BUILD_DIR="${BUILD_DIR:-$ROOT_DIR/build/${PRESET}}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+if [[ -f /usr/local/lib/ioplane/common.sh ]]; then
+    # shellcheck source=/dev/null
+    source /usr/local/lib/ioplane/common.sh
+else
+    # shellcheck source=lib/common.sh disable=SC1091
+    source "${SCRIPT_DIR}/lib/common.sh"
+fi
+
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+readonly ROOT_DIR
+readonly PRESET="${PRESET:-clang-perf}"
+readonly BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build/${PRESET}}"
 RUN_ID="${RUN_ID:-$(date +%Y%m%d-%H%M%S)}"
+readonly RUN_ID
 TOOL="${1:-auto}"
 BENCH_NAME="bench_hot_path"
 ITERATIONS="5000"
 SCENARIO=""
-RESULTS_ROOT="${RESULTS_DIR:-$ROOT_DIR/docs/tmp/profiling}"
-RESULTS_DIR="${RESULTS_ROOT}/${RUN_ID}"
-SUMMARY_FILE="${RESULTS_DIR}/summary.md"
-UFTRACE_PRESET="${UFTRACE_PRESET:-clang-uftrace}"
-UFTRACE_BUILD_DIR="${UFTRACE_BUILD_DIR:-$ROOT_DIR/build/${UFTRACE_PRESET}}"
-PODMAN_PERF_LANE="${IOJOURNAL_PODMAN_PERF_LANE:-0}"
+readonly RESULTS_ROOT="${RESULTS_DIR:-${ROOT_DIR}/docs/tmp/profiling}"
+readonly RESULTS_DIR="${RESULTS_ROOT}/${RUN_ID}"
+readonly SUMMARY_FILE="${RESULTS_DIR}/summary.md"
+readonly UFTRACE_PRESET="${UFTRACE_PRESET:-clang-uftrace}"
+readonly UFTRACE_BUILD_DIR="${UFTRACE_BUILD_DIR:-${ROOT_DIR}/build/${UFTRACE_PRESET}}"
+readonly PODMAN_PERF_LANE="${IOJOURNAL_PODMAN_PERF_LANE:-0}"
 
 usage() {
     cat <<'EOF'
@@ -49,21 +62,21 @@ EOF
 
 need_cmd() {
     if ! command -v "$1" >/dev/null 2>&1; then
-        echo "missing tool: $1" >&2
+        printf "missing tool: %s\n" "$1" >&2
         exit 2
     fi
 }
 
 validate_iterations() {
-    if [[ ! "$1" =~ ^[0-9]+$ ]] || (( "$1" == 0 )); then
-        echo "iterations must be a positive integer: $1" >&2
+    if [[ ! "$1" =~ ^[0-9]+$ ]] || (( $1 == 0 )); then
+        printf "iterations must be a positive integer: %s\n" "$1" >&2
         exit 2
     fi
 }
 
 require_perf_lane() {
     if [[ "${PODMAN_PERF_LANE}" != "1" ]]; then
-        echo "this mode must run through scripts/run-podman-perf-lane.sh" >&2
+        printf "this mode must run through scripts/run-podman-perf-lane.sh\n" >&2
         exit 2
     fi
 }
@@ -108,7 +121,7 @@ normalize_scenario() {
             printf '%s\n' "${2:-enabled_console}"
             ;;
         *)
-            echo "unknown scenario for bench_hot_path: ${2:-}" >&2
+            printf "unknown scenario for bench_hot_path: %s\n" "${2:-}" >&2
             exit 2
             ;;
         esac
@@ -119,7 +132,7 @@ normalize_scenario() {
             printf 'append_ndjson\n'
             ;;
         *)
-            echo "unknown scenario for bench_file_sink: ${2:-}" >&2
+            printf "unknown scenario for bench_file_sink: %s\n" "${2:-}" >&2
             exit 2
             ;;
         esac
@@ -130,13 +143,13 @@ normalize_scenario() {
             printf 'udp_loopback\n'
             ;;
         *)
-            echo "unknown scenario for bench_syslog_udp: ${2:-}" >&2
+            printf "unknown scenario for bench_syslog_udp: %s\n" "${2:-}" >&2
             exit 2
             ;;
         esac
         ;;
     *)
-        echo "unknown bench target: $1" >&2
+        printf "unknown bench target: %s\n" "$1" >&2
         exit 2
         ;;
     esac
@@ -160,7 +173,7 @@ bench_args() {
         printf '%s\n' "${iterations}" "--tsv"
         ;;
     *)
-        echo "unknown bench target: ${bench_name}" >&2
+        printf "unknown bench target: %s\n" "${bench_name}" >&2
         exit 2
         ;;
     esac
@@ -224,6 +237,7 @@ auto)
             --export-markdown "${RESULTS_DIR}/hyperfine-bench_file_sink-append_ndjson.md" \
             "$(command_string "${local_bench_file_sink_append_ndjson[@]}")"
     fi
+    # shellcheck disable=SC2016
     {
         printf '# Profiling Summary\n\n'
         printf '| Field | Value |\n'

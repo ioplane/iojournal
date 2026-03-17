@@ -1,13 +1,25 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COVERAGE_TOOLCHAIN="${COVERAGE_TOOLCHAIN:-all}"
-CLANG_BUILD_DIR="${ROOT_DIR}/build/clang-coverage"
-CLANG_REPORT_DIR="${CLANG_BUILD_DIR}/coverage"
-CLANG_PROFILE_DIR="${CLANG_BUILD_DIR}/profiles"
-GCC_BUILD_DIR="${ROOT_DIR}/build/gcc-coverage"
-GCC_REPORT_DIR="${GCC_BUILD_DIR}/coverage"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+if [[ -f /usr/local/lib/ioplane/common.sh ]]; then
+    # shellcheck source=/dev/null
+    source /usr/local/lib/ioplane/common.sh
+else
+    # shellcheck source=lib/common.sh disable=SC1091
+    source "${SCRIPT_DIR}/lib/common.sh"
+fi
+
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+readonly ROOT_DIR
+readonly COVERAGE_TOOLCHAIN="${COVERAGE_TOOLCHAIN:-all}"
+readonly CLANG_BUILD_DIR="${ROOT_DIR}/build/clang-coverage"
+readonly CLANG_REPORT_DIR="${CLANG_BUILD_DIR}/coverage"
+readonly CLANG_PROFILE_DIR="${CLANG_BUILD_DIR}/profiles"
+readonly GCC_BUILD_DIR="${ROOT_DIR}/build/gcc-coverage"
+readonly GCC_REPORT_DIR="${GCC_BUILD_DIR}/coverage"
 
 mkdir -p "${CLANG_REPORT_DIR}" "${GCC_REPORT_DIR}"
 
@@ -124,7 +136,7 @@ all)
     cat "${GCC_REPORT_DIR}/coverage.txt"
     ;;
 *)
-    echo "unknown COVERAGE_TOOLCHAIN: ${COVERAGE_TOOLCHAIN}" >&2
+    printf "unknown COVERAGE_TOOLCHAIN: %s\n" "${COVERAGE_TOOLCHAIN}" >&2
     exit 2
     ;;
 esac

@@ -1,46 +1,60 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
+# Captures host/toolchain info and runs the release gate for RC verification.
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-RUNSTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-HEAD_SHORT="nogit"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
 
-if git -C "${ROOT_DIR}" rev-parse --short HEAD >/dev/null 2>&1; then
-    git config --global --add safe.directory "${ROOT_DIR}" >/dev/null 2>&1 || true
-    HEAD_SHORT="$(git -C "${ROOT_DIR}" rev-parse --short HEAD)"
+# shellcheck source=lib/common.sh disable=SC1091
+if [[ -f /usr/local/lib/ioplane/common.sh ]]; then
+    source /usr/local/lib/ioplane/common.sh
+else
+    source "${SCRIPT_DIR}/lib/common.sh"
 fi
 
-RUN_ID="${RUNSTAMP}-${HEAD_SHORT}"
-OUT_BASE="${ROOT_DIR}/dist/release-candidate"
-OUT_DIR="${OUT_BASE}/runs/${RUN_ID}"
-LATEST_FILE="${OUT_BASE}/latest.txt"
-INDEX_FILE="${OUT_BASE}/index.tsv"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd -P)"
+readonly ROOT_DIR
+
+RUNSTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+readonly RUNSTAMP
+
+HEAD_SHORT="$(ioj_git_head_short "${ROOT_DIR}")"
+readonly HEAD_SHORT
+
+ioj_git_safe_directory "${ROOT_DIR}"
+
+readonly RUN_ID="${RUNSTAMP}-${HEAD_SHORT}"
+readonly OUT_BASE="${ROOT_DIR}/dist/release-candidate"
+readonly OUT_DIR="${OUT_BASE}/runs/${RUN_ID}"
+readonly LATEST_FILE="${OUT_BASE}/latest.txt"
+readonly INDEX_FILE="${OUT_BASE}/index.tsv"
 
 mkdir -p "${OUT_DIR}"
 
 {
-    echo "run_id	${RUN_ID}"
-    echo "git_head_short	${HEAD_SHORT}"
-    echo "utc_started	$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-} >"${OUT_DIR}/run.txt"
+    printf 'run_id\t%s\n' "${RUN_ID}"
+    printf 'git_head_short\t%s\n' "${HEAD_SHORT}"
+    printf 'utc_started\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+} > "${OUT_DIR}/run.txt"
 
 {
     uname -a
-    echo "---"
+    printf '%s\n' "---"
     lscpu | sed -n '1,80p'
-} >"${OUT_DIR}/host.txt"
+} > "${OUT_DIR}/host.txt"
 
 {
     clang --version | sed -n '1,2p' || true
-    echo "---"
+    printf '%s\n' "---"
     cmake --version | sed -n '1,1p' || true
-    echo "---"
+    printf '%s\n' "---"
     python3 --version
-} >"${OUT_DIR}/toolchain.txt"
+} > "${OUT_DIR}/toolchain.txt"
 
-bash "${ROOT_DIR}/scripts/run-release-gate.sh" >"${OUT_DIR}/release-gate.txt" 2>&1
+bash "${ROOT_DIR}/scripts/run-release-gate.sh" > "${OUT_DIR}/release-gate.txt" 2>&1
 
-cat >"${OUT_DIR}/summary.md" <<EOF
+cat > "${OUT_DIR}/summary.md" <<EOF
 # Release Candidate Verification Summary
 
 Run id: \`${RUN_ID}\`
@@ -74,7 +88,7 @@ Local release-candidate checks completed for this run.
 EOF
 
 if [[ ! -f "${INDEX_FILE}" ]]; then
-    printf "run_id\tgit_head_short\tstatus\n" >"${INDEX_FILE}"
+    printf 'run_id\tgit_head_short\tstatus\n' > "${INDEX_FILE}"
 fi
-printf "%s\t%s\tPASS\n" "${RUN_ID}" "${HEAD_SHORT}" >>"${INDEX_FILE}"
-printf "%s\n" "${RUN_ID}" >"${LATEST_FILE}"
+printf '%s\t%s\tPASS\n' "${RUN_ID}" "${HEAD_SHORT}" >> "${INDEX_FILE}"
+printf '%s\n' "${RUN_ID}" > "${LATEST_FILE}"
