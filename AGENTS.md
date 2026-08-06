@@ -52,16 +52,16 @@ ctest --preset clang-debug
 Use `cmake --build --preset clang-debug --target format` to rewrite formatting
 and `--target format-check` to verify it.
 
-Run `./scripts/quality.sh` before submitting changes. During bootstrap stages,
+Run `python scripts/quality.py` before submitting changes. During bootstrap stages,
 the quality script may skip build-specific steps until `CMakeLists.txt` and
-presets exist; use `./scripts/quality.sh` for the repository-level checks that
+presets exist; use `python scripts/quality.py` for the repository-level checks that
 can run before the CMake surface exists.
 
 Agent execution rules:
 
 - ordinary build, test, analyzer, and docs work stays on the default `podman run` lane
-- `io_uring`, `uftrace`, `gdb`, and other ptrace-sensitive profiling work must use `scripts/run-podman-perf-lane.sh`
-- after each performance or behavior-changing task, rerun the full containerized `scripts/quality.sh` gate
+- `io_uring`, `uftrace`, `gdb`, and other ptrace-sensitive profiling work must use `scripts/podman_perf_lane.py`
+- after each performance or behavior-changing task, rerun the full containerized `python scripts/quality.py` gate
 - performance work must update the active evidence docs under `docs/plans/comparison/` and `docs/testing/`
 
 For AI handoff and plan-gate edits, make planning edits and evidence updates
@@ -100,8 +100,8 @@ podman build -t iojournal-dev:latest -f deploy/podman/Containerfile .
 podman run --rm -it -v $(pwd):/workspace:Z iojournal-dev:latest
 
 # Perf / io_uring / ptrace-sensitive lane
-bash scripts/run-podman-perf-lane.sh bash
-bash scripts/run-podman-perf-lane.sh bash scripts/run-profiler-review.sh auto 3000
+uv run --script scripts/podman_perf_lane.py bash
+uv run --script scripts/podman_perf_lane.py bash scripts/run-profiler-review.sh auto 3000
 ```
 
 - All `io*` projects share `localhost/ioplane-base:latest` as the common toolchain layer.
@@ -130,13 +130,13 @@ cmake --build --preset clang-debug
 Then choose the tool that matches the question:
 
 ```bash
-bash scripts/run-podman-perf-lane.sh bash scripts/run-profiler-review.sh uftrace bench_hot_path 2000 medium_message_with_metadata
-bash scripts/run-podman-perf-lane.sh bash scripts/run-profiler-review.sh callgrind bench_file_sink 3000 append_ndjson
-bash scripts/run-podman-perf-lane.sh bash scripts/run-profiler-review.sh gdb bench_hot_path 1000 enabled_console
+uv run --script scripts/podman_perf_lane.py bash scripts/run-profiler-review.sh uftrace bench_hot_path 2000 medium_message_with_metadata
+uv run --script scripts/podman_perf_lane.py bash scripts/run-profiler-review.sh callgrind bench_file_sink 3000 append_ndjson
+uv run --script scripts/podman_perf_lane.py bash scripts/run-profiler-review.sh gdb bench_hot_path 1000 enabled_console
 ```
 
 `io_uring` experiments and ptrace-sensitive profiling must run through
-`scripts/run-podman-perf-lane.sh`. The default `podman run` path stays
+`scripts/podman_perf_lane.py`. The default `podman run` path stays
 authoritative for normal build, test, and analyzer work.
 
 ## Compiler And Vectorization Policy

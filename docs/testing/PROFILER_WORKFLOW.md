@@ -65,9 +65,9 @@ Use the dedicated Podman perf lane for host-launched `io_uring`, `uftrace`, `gdb
 ptrace-sensitive runs:
 
 ```bash
-bash scripts/run-podman-perf-lane.sh bash
-bash scripts/run-podman-perf-lane.sh bash scripts/run-profiler-review.sh auto 3000
-bash scripts/run-podman-perf-lane.sh bash scripts/run-profiler-review.sh uftrace bench_hot_path 2000 medium_message_with_metadata
+uv run --script scripts/podman_perf_lane.py bash
+uv run --script scripts/podman_perf_lane.py bash scripts/run-profiler-review.sh auto 3000
+uv run --script scripts/podman_perf_lane.py bash scripts/run-profiler-review.sh uftrace bench_hot_path 2000 medium_message_with_metadata
 ```
 
 The current script supports these benchmark names:
@@ -83,7 +83,7 @@ Profiler preset rules:
 - Keep `clang-debug` for bring-up and debugger convenience, not for release-facing comparison evidence.
 - `auto` mode always runs the canonical shared suite and records whether the invocation was inside
   the dedicated Podman perf lane.
-- `scripts/run-podman-perf-lane.sh` is the official Podman launch mode for `io_uring` and
+- `scripts/podman_perf_lane.py` is the official Podman launch mode for `io_uring` and
   ptrace-sensitive profiling because the default seccomp profile does not expose that path
   correctly for Sprint 11A relevance work.
 
