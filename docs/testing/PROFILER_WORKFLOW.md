@@ -22,7 +22,7 @@ sequenceDiagram
     participant Docs as Sprint 10 evidence docs
 
     Dev->>Bench: select scenario and iterations
-    Dev->>Tool: run scripts/run-profiler-review.sh
+    Dev->>Tool: run scripts/profiler_review.py
     Tool->>Artifacts: emit raw trace, callgrind, or debug session output
     Dev->>Docs: summarize hotspot and cost interpretation
 ```
@@ -31,10 +31,10 @@ sequenceDiagram
 
 | Tool | Primary question | Entry mode |
 | --- | --- | --- |
-| `hyperfine` | repeated command-level timing stability | `scripts/run-profiler-review.sh hyperfine ...` |
-| `uftrace` | function graph and hot-path cost distribution | `scripts/run-profiler-review.sh uftrace ...` |
-| `valgrind --tool=callgrind` | call-cost and instruction-path explanation | `scripts/run-profiler-review.sh callgrind ...` |
-| `gdb` | low-level runtime inspection and failure triage | `scripts/run-profiler-review.sh gdb ...` |
+| `hyperfine` | repeated command-level timing stability | `scripts/profiler_review.py hyperfine ...` |
+| `uftrace` | function graph and hot-path cost distribution | `scripts/profiler_review.py uftrace ...` |
+| `valgrind --tool=callgrind` | call-cost and instruction-path explanation | `scripts/profiler_review.py callgrind ...` |
+| `gdb` | low-level runtime inspection and failure triage | `scripts/profiler_review.py gdb ...` |
 
 Rules:
 
@@ -48,26 +48,26 @@ Rules:
 Prepare the benchmark binaries first:
 
 ```bash
-PRESET=clang-perf bash scripts/run-benchmarks.sh
-bash scripts/build-uftrace-bench.sh
+PRESET=clang-perf uv run --script scripts/benchmarks.py
+uv run --script scripts/build_uftrace_bench.py
 ```
 
 Then select one profiler mode:
 
 ```bash
-bash scripts/run-profiler-review.sh auto 3000
-bash scripts/run-profiler-review.sh uftrace bench_hot_path 2000 medium_message_with_metadata
-bash scripts/run-profiler-review.sh callgrind bench_file_sink 3000 append_ndjson
-bash scripts/run-profiler-review.sh gdb bench_syslog_udp 1000 udp_loopback
+uv run --script scripts/profiler_review.py auto 3000
+uv run --script scripts/profiler_review.py uftrace bench_hot_path 2000 medium_message_with_metadata
+uv run --script scripts/profiler_review.py callgrind bench_file_sink 3000 append_ndjson
+uv run --script scripts/profiler_review.py gdb bench_syslog_udp 1000 udp_loopback
 ```
 
 Use the dedicated Podman perf lane for host-launched `io_uring`, `uftrace`, `gdb`, and other
 ptrace-sensitive runs:
 
 ```bash
-bash scripts/run-podman-perf-lane.sh bash
-bash scripts/run-podman-perf-lane.sh bash scripts/run-profiler-review.sh auto 3000
-bash scripts/run-podman-perf-lane.sh bash scripts/run-profiler-review.sh uftrace bench_hot_path 2000 medium_message_with_metadata
+uv run --script scripts/podman_perf_lane.py bash
+uv run --script scripts/podman_perf_lane.py uv run --script scripts/profiler_review.py auto 3000
+uv run --script scripts/podman_perf_lane.py uv run --script scripts/profiler_review.py uftrace bench_hot_path 2000 medium_message_with_metadata
 ```
 
 The current script supports these benchmark names:
@@ -78,12 +78,12 @@ The current script supports these benchmark names:
 
 Profiler preset rules:
 
-- `scripts/run-profiler-review.sh` defaults to `PRESET=clang-perf`.
+- `scripts/profiler_review.py` defaults to `PRESET=clang-perf`.
 - `uftrace` runs use `UFTRACE_PRESET=clang-uftrace` unless overridden explicitly.
 - Keep `clang-debug` for bring-up and debugger convenience, not for release-facing comparison evidence.
 - `auto` mode always runs the canonical shared suite and records whether the invocation was inside
   the dedicated Podman perf lane.
-- `scripts/run-podman-perf-lane.sh` is the official Podman launch mode for `io_uring` and
+- `scripts/podman_perf_lane.py` is the official Podman launch mode for `io_uring` and
   ptrace-sensitive profiling because the default seccomp profile does not expose that path
   correctly for Sprint 11A relevance work.
 

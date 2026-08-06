@@ -30,7 +30,7 @@
 - Утилиты хоста используются только как средства оркестрации.
 - Процедуры контрольных замеров и профилирования должны воспроизводиться из скриптов репозитория или явно задокументированных команд.
 - Обычный запуск Podman используется для стандартных задач сборки, тестирования и анализа.
-- `scripts/run-podman-perf-lane.sh` является официальным режимом запуска Podman для `io_uring`,
+- `scripts/podman_perf_lane.py` является официальным режимом запуска Podman для `io_uring`,
   `uftrace`, `gdb` и других профилировочных задач, чувствительных к ограничениям `ptrace`.
 
 ```mermaid
@@ -53,11 +53,11 @@ flowchart LR
 | Статический анализ | `cppcheck`, `PVS-Studio`, `CodeChecker` |
 | Анализ Clang | `clang-tidy`, `clang` Static Analyzer |
 | Проверка документации | `python3 scripts/lint-docs.py` |
-| Набор benchmark-сценариев | `bash scripts/run-benchmarks.sh` |
-| Точка входа в профилирование | `bash scripts/run-profiler-review.sh` |
-| Выделенный Podman perf-режим | `bash scripts/run-podman-perf-lane.sh ...` |
-| Сборка режима для `uftrace` | `bash scripts/build-uftrace-bench.sh` |
-| Репозиторная проверка | `bash scripts/quality.sh` |
+| Набор benchmark-сценариев | `uv run --script scripts/benchmarks.py` |
+| Точка входа в профилирование | `uv run --script scripts/profiler_review.py` |
+| Выделенный Podman perf-режим | `uv run --script scripts/podman_perf_lane.py ...` |
+| Сборка режима для `uftrace` | `uv run --script scripts/build_uftrace_bench.py` |
+| Репозиторная проверка | `python scripts/quality.py` |
 
 ## Базовый набор инструментов Clang 22
 
@@ -155,10 +155,10 @@ flowchart LR
 |---|---|
 | `docs/testing/BENCHMARK_METHODOLOGY.md` | каталог нормализованных сценариев, политика артефактов и правила сравнения |
 | `docs/testing/PROFILER_WORKFLOW.md` | выбор инструментов профилирования, политика артефактов и правила разбора результатов |
-| `scripts/run-podman-perf-lane.sh` | официальный режим запуска Podman для `io_uring` и профилирования, чувствительного к `ptrace` |
-| `scripts/run-benchmarks.sh` | сборка и запуск benchmark-binaries репозитория с выгрузкой raw TSV artifacts |
-| `scripts/build-uftrace-bench.sh` | сборка выделенных benchmark-binaries для `clang-uftrace` |
-| `scripts/run-profiler-review.sh` | запуск одного режима профилирования против одного benchmark-binary и scenario |
+| `scripts/podman_perf_lane.py` | официальный режим запуска Podman для `io_uring` и профилирования, чувствительного к `ptrace` |
+| `scripts/benchmarks.py` | сборка и запуск benchmark-binaries репозитория с выгрузкой raw TSV artifacts |
+| `scripts/build_uftrace_bench.py` | сборка выделенных benchmark-binaries для `clang-uftrace` |
+| `scripts/profiler_review.py` | запуск одного режима профилирования против одного benchmark-binary и scenario |
 
 Правила:
 
@@ -166,7 +166,7 @@ flowchart LR
 - `docs/testing/PROFILER_WORKFLOW.md` является источником истины для требований к подтверждениям, подкрепленным профилировщиками.
 - Скрипты репозитория должны синхронизироваться с обоими документами при изменении benchmark-сценариев или режимов профилирования.
 - Для release-facing локальных сравнений используйте `clang-perf`, а для `uftrace` evidence используйте `clang-uftrace`.
-- Используйте `scripts/run-podman-perf-lane.sh`, когда задача по benchmark или профилированию зависит от
+- Используйте `scripts/podman_perf_lane.py`, когда задача по benchmark или профилированию зависит от
   доступности `io_uring` или ослабленных ограничений `ptrace`; не расширяйте обычный Podman lane.
 
 ## Наборы инструкций и агенты

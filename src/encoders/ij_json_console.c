@@ -284,6 +284,12 @@ static ij_status_t ij_builder_append_attr_value(ij_json_builder_t *builder,
     }
 }
 
+static _Thread_local struct {
+    int64_t cached_seconds;
+    struct tm cached_tm;
+    bool valid;
+} ij_timestamp_cache = {.valid = false};
+
 ij_status_t ij_format_timestamp_rfc3339(ij_timestamp_t timestamp, char *buffer, size_t buffer_size)
 {
     time_t seconds = (time_t)timestamp.unix_seconds;
@@ -294,8 +300,15 @@ ij_status_t ij_format_timestamp_rfc3339(ij_timestamp_t timestamp, char *buffer, 
     if (buffer == NULL || buffer_size < 25U || timestamp.nanoseconds >= 1000000000U) {
         return IJ_STATUS_INVALID_ARGUMENT;
     }
-    if (gmtime_r(&seconds, &tm_utc) == NULL) {
-        return IJ_STATUS_ENCODE_ERROR;
+    if (ij_timestamp_cache.valid && ij_timestamp_cache.cached_seconds == timestamp.unix_seconds) {
+        tm_utc = ij_timestamp_cache.cached_tm;
+    } else {
+        if (gmtime_r(&seconds, &tm_utc) == NULL) {
+            return IJ_STATUS_ENCODE_ERROR;
+        }
+        ij_timestamp_cache.cached_seconds = timestamp.unix_seconds;
+        ij_timestamp_cache.cached_tm = tm_utc;
+        ij_timestamp_cache.valid = true;
     }
 
     year = tm_utc.tm_year + 1900;

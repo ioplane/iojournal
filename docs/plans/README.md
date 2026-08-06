@@ -46,7 +46,7 @@ This directory is the authoritative planning surface for `iojournal`.
   - `docs/ru/05-release-candidate-checklist.md`
 - Always run after plan or evidence changes:
   - `python3 scripts/lint-docs.py`
-  - `podman run --rm --env-file /opt/projects/repositories/iohttpparser/.env -v $(pwd):/workspace:Z -w /workspace localhost/iojournal-dev:latest bash scripts/quality.sh`
+  - `podman run --rm --env-file /opt/projects/repositories/iohttpparser/.env -v $(pwd):/workspace:Z -w /workspace localhost/iojournal-dev:latest python scripts/quality.py`
 - For perf/comparison scope changes, also keep these files synchronized in the same commit:
   - `docs/plans/comparison/PERFORMANCE_RESULTS.md`
   - `docs/plans/comparison/RAW_ARTIFACTS.md`

@@ -30,7 +30,7 @@ feature-specific plans under `docs/plans/`.
 - Treat host tools as orchestration helpers only.
 - Keep benchmark and profiling procedures reproducible from repository scripts or documented commands.
 - Keep the default Podman launch for normal build, test, and analyzer work.
-- Use `scripts/run-podman-perf-lane.sh` as the official Podman launch mode for `io_uring`,
+- Use `scripts/podman_perf_lane.py` as the official Podman launch mode for `io_uring`,
   `uftrace`, `gdb`, and other ptrace-sensitive performance lanes.
 
 ```mermaid
@@ -53,11 +53,11 @@ flowchart LR
 | Static analysis | `cppcheck`, `PVS-Studio`, `CodeChecker` |
 | Clang analysis | `clang-tidy`, `clang` Static Analyzer |
 | Documentation validation | `python3 scripts/lint-docs.py` |
-| Benchmark harness | `bash scripts/run-benchmarks.sh` |
-| Profiler entrypoint | `bash scripts/run-profiler-review.sh` |
-| Podman perf lane | `bash scripts/run-podman-perf-lane.sh ...` |
-| uftrace profiler build lane | `bash scripts/build-uftrace-bench.sh` |
-| Repository gate | `bash scripts/quality.sh` |
+| Benchmark harness | `uv run --script scripts/benchmarks.py` |
+| Profiler entrypoint | `uv run --script scripts/profiler_review.py` |
+| Podman perf lane | `uv run --script scripts/podman_perf_lane.py ...` |
+| uftrace profiler build lane | `uv run --script scripts/build_uftrace_bench.py` |
+| Repository gate | `python scripts/quality.py` |
 
 ## Clang 22 Tooling Baseline
 
@@ -153,10 +153,10 @@ Use these documents and scripts as the stable surface for the Sprint 09 and Spri
 |---|---|
 | `docs/testing/BENCHMARK_METHODOLOGY.md` | normalized scenario catalog, artifact policy, and comparison rules |
 | `docs/testing/PROFILER_WORKFLOW.md` | profiler tool selection, artifact policy, and review rules |
-| `scripts/run-podman-perf-lane.sh` | official Podman launch mode for `io_uring` and ptrace-sensitive profiler work |
-| `scripts/run-benchmarks.sh` | build and execute the repository benchmark binaries and emit raw TSV artifacts |
-| `scripts/build-uftrace-bench.sh` | build the dedicated `clang-uftrace` benchmark binaries |
-| `scripts/run-profiler-review.sh` | run one profiler mode against one benchmark binary and scenario |
+| `scripts/podman_perf_lane.py` | official Podman launch mode for `io_uring` and ptrace-sensitive profiler work |
+| `scripts/benchmarks.py` | build and execute the repository benchmark binaries and emit raw TSV artifacts |
+| `scripts/build_uftrace_bench.py` | build the dedicated `clang-uftrace` benchmark binaries |
+| `scripts/profiler_review.py` | run one profiler mode against one benchmark binary and scenario |
 
 Rules:
 
@@ -164,7 +164,7 @@ Rules:
 - Treat `docs/testing/PROFILER_WORKFLOW.md` as the authority for profiler-backed evidence requirements.
 - Keep repository scripts aligned with both documents when benchmark or profiler modes change.
 - Use `clang-perf` for release-facing local comparisons and `clang-uftrace` for `uftrace` evidence.
-- Use `scripts/run-podman-perf-lane.sh` when the benchmark or profiler task depends on `io_uring`
+- Use `scripts/podman_perf_lane.py` when the benchmark or profiler task depends on `io_uring`
   availability or relaxed ptrace restrictions; do not broaden the default Podman lane.
 
 ## Skills And Agents

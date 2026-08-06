@@ -172,10 +172,10 @@ Dependency interpretation:
   - `docs/en/06-rc1-publish-decision.md` and `docs/ru/06-rc1-publish-decision.md` when gate state changes
 - Before handoff for another AI, the following commands are mandatory:
   - `python3 scripts/lint-docs.py`
-  - `podman run --rm --env-file /opt/projects/repositories/iohttpparser/.env -v $(pwd):/workspace:Z -w /workspace localhost/iojournal-dev:latest bash scripts/quality.sh`
-  - `bash scripts/run-release-candidate.sh`
-  - `bash scripts/build-release-assets.sh v0.1.0-rc.1`
-  - `bash scripts/render-release-notes.sh`
+  - `podman run --rm --env-file /opt/projects/repositories/iohttpparser/.env -v $(pwd):/workspace:Z -w /workspace localhost/iojournal-dev:latest python scripts/quality.py`
+  - `uv run --script scripts/release_candidate.py`
+  - `uv run --script scripts/release_assets.py v0.1.0-rc.1`
+  - `uv run --script scripts/release_notes.py v0.1.0-rc.1`
 - Keep evidence surfaces synchronized if performance evidence changes:
   - `docs/plans/comparison/PERFORMANCE_RESULTS.md`
   - `docs/plans/comparison/RAW_ARTIFACTS.md`

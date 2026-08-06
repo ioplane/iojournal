@@ -24,7 +24,7 @@ stateDiagram-v2
 
 | Gate | Текущее доказательство | Статус |
 | --- | --- | --- |
-| Local quality | `python3 scripts/lint-docs.py` `PASS`; `bash scripts/quality.sh` `PASS: 14`, `FAIL: 0`, `SKIP: 0` | `PASS` |
+| Local quality | `python3 scripts/lint-docs.py` `PASS`; `python scripts/quality.py` `PASS: 14`, `FAIL: 0`, `SKIP: 0` | `PASS` |
 | Functional comparison | пакет Sprint 10 complete в [`docs/plans/comparison/`](/opt/projects/repositories/iojournal/docs/plans/comparison/) | `PASS` |
 | Optimization evidence | активный benchmark [`20260316-210134`](/opt/projects/repositories/iojournal/docs/tmp/benchmarks/20260316-210134), активный profiler pack [`20260316-210204`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210204), активные `uftrace` companions [`20260316-210329`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210329), [`20260316-210345`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210345), [`20260316-210349`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210349) | `PASS` |
 | Release candidate run | активный локальный RC run [`20260316T212052Z-d52d88e`](/opt/projects/repositories/iojournal/dist/release-candidate/runs/20260316T212052Z-d52d88e/summary.md) из post-11D workspace state | `PASS` |
@@ -42,8 +42,8 @@ stateDiagram-v2
 
 ## Необходимые Действия До Публикации
 
-1. Повторно выполнить `bash scripts/run-release-candidate.sh` и обновить `dist/release-candidate` из финального post-11D state.
-2. Повторно выполнить `bash scripts/build-release-assets.sh v0.1.0-rc.1` и `bash scripts/render-release-notes.sh`.
+1. Повторно выполнить `uv run --script scripts/release_candidate.py` и обновить `dist/release-candidate` из финального post-11D state.
+2. Повторно выполнить `uv run --script scripts/release_assets.py v0.1.0-rc.1` и `uv run --script scripts/release_notes.py v0.1.0-rc.1`.
 3. Закоммитить и запушить финальное состояние workspace.
 4. Дождаться обязательных GitHub workflow run’ов на pushed revision и зафиксировать их результат.
 5. Обновить этот документ до `PUBLISH` только после того, как каждый gate из [`05-release-candidate-checklist.md`](/opt/projects/repositories/iojournal/docs/ru/05-release-candidate-checklist.md) будет иметь статус `PASS`.

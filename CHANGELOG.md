@@ -29,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Benchmark execution now uses the standalone `scripts/benchmarks.py` Python CLI.
+- Tier-1 competitor fetch and build operations now use the modular `scripts/tier1.py` CLI.
+- Tier-1 benchmark compilation and artifact generation now use `scripts/tier1_benchmarks.py`.
+- Profiler review modes now use `scripts/profiler_review.py` while retaining the explicit Podman perf-lane guard.
+
 - `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `docs/en/04-tooling-and-agent-workflow.md`, `docs/ru/04-tooling-and-agent-workflow.md`, and the `iojournal-performance-optimization` skill now additionally enforce dual-compiler C23 lanes, forbid mixing GCC and Clang sanitizer or LTO artifacts, require vectorization diagnostics from both compilers for hot-path work, prefer `#pragma omp simd` for portable hints, and keep `restrict` plus floating-point tuning under explicit contract control.
 - `docs/plans/comparison/RAW_ARTIFACTS.md`, `docs/plans/comparison/IOHTTP_IOGUARD_FIT_MATRIX.md`, and `docs/plans/comparison/PERFORMANCE_RESULTS.md` now reference the Sprint 11D source-of-record evidence pack: local benchmarks in `docs/tmp/benchmarks/20260316-210134`, callgrind/hyperfine profiler pack `docs/tmp/profiling/20260316-210204`, and `uftrace` wall-time packs `docs/tmp/profiling/20260316-210329`, `20260316-210345`, and `20260316-210349`.
 - `src/encoders/ij_json_escape_scalar.c`, `src/core/ij_utf8_scalar.c`, and `src/encoders/ij_simd_dispatch.h` now bypass SIMD dispatch for short strings, and the refreshed quiet Sprint 11C source of record is `docs/tmp/benchmarks/20260316-184502-quiet/` with profiler pack `docs/tmp/profiling/20260316-184513/`.
@@ -102,6 +107,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/rfc/README.md` and `docs/rfc/PRIORITY.md` to align the RFC corpus workflow with the new canonical list and deferred-only classification.
 - `docs/plans/sprints/2026-03-14-sprint-02-rfc-corpus-and-protocol-contracts.md` to mark Task 1 and Task 2 as completed.
 - `docs/plans/BACKLOG.md` to link deferred protocol items back to the Sprint 02 defer rationale.
+
+### Removed
+
+- Removed the `scripts/run-benchmarks.sh` benchmark entrypoint.
+- Removed the separate Tier-1 competitor fetch and build shell entrypoints.
+- Removed the separate Tier-1 benchmark shell entrypoint.
+- Removed the profiler review shell entrypoint.
 
 ### Fixed
 

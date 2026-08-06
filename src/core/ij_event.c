@@ -134,7 +134,9 @@ static bool ij_scan_string_field_copy(const char *value, size_t max_len, bool al
                 ij_json_escape_find_first_special((const unsigned char *)value, len) != len;
             return true;
         }
-        needs_json_escape = needs_json_escape || ij_ascii_needs_json_escape(c);
+        if (!needs_json_escape) {
+            needs_json_escape = ij_ascii_needs_json_escape(c);
+        }
     }
 
     return false;
@@ -160,7 +162,9 @@ static bool ij_validate_attr_string_copy(const char *value, size_t len, bool *ou
                 ij_json_escape_find_first_special((const unsigned char *)value, len) != len;
             return true;
         }
-        needs_json_escape = needs_json_escape || ij_ascii_needs_json_escape(c);
+        if (!needs_json_escape) {
+            needs_json_escape = ij_ascii_needs_json_escape(c);
+        }
     }
 
     *out_needs_json_escape = needs_json_escape;
@@ -306,11 +310,6 @@ ij_status_t ij_event_copy_from_input(ij_event_copy_t *out_event, const ij_event_
     }
 
     memset(out_event, 0, sizeof(*out_event));
-    memset(attr_keys, 0, sizeof(attr_keys));
-    memset(attr_key_lens, 0, sizeof(attr_key_lens));
-    memset(attr_key_needs_json_escape, 0, sizeof(attr_key_needs_json_escape));
-    memset(attr_string_needs_json_escape, 0, sizeof(attr_string_needs_json_escape));
-    memset(attr_should_redact, 0, sizeof(attr_should_redact));
 
     if (!ij_level_is_valid(event->level) || event->timestamp.nanoseconds >= 1000000000U ||
         event->attribute_count > IJ_ATTRIBUTE_COUNT_MAX ||

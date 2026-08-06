@@ -39,11 +39,11 @@ Read these in order before making non-trivial changes:
   - `docs/plans/2026-03-14-iojournal-v0.1.0-rc1-master-plan.md`
   - `docs/plans/sprints/README.md`
   - `docs/plans/sprints/<active-sprint>.md`
-- Use `scripts/run-podman-perf-lane.sh` for `io_uring`, `uftrace`, `gdb`, and other ptrace-sensitive profiling work; keep the default `podman run` path for ordinary build, test, and analyzer steps.
-- After every performance task, rerun `scripts/quality.sh` inside Podman before claiming progress.
+- Use `uv run --script scripts/podman_perf_lane.py` for `io_uring`, `uftrace`, `gdb`, and other ptrace-sensitive profiling work; keep the default `podman run` path for ordinary build, test, and analyzer steps.
+- After every performance task, rerun `python scripts/quality.py` inside Podman before claiming progress.
 - For performance work, update the active evidence docs and source-of-record artifact references before moving to the next sprint task.
 - For sprint/document handoffs, mandatory checks are: `python3 scripts/lint-docs.py` and
-  `podman run --rm --env-file /opt/projects/repositories/iohttpparser/.env -v $(pwd):/workspace:Z -w /workspace localhost/iojournal-dev:latest bash scripts/quality.sh`.
+  `podman run --rm --env-file /opt/projects/repositories/iohttpparser/.env -v $(pwd):/workspace:Z -w /workspace localhost/iojournal-dev:latest python scripts/quality.py`.
 
 ## Compiler Policy
 
