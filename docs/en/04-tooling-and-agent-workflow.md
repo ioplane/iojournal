@@ -53,7 +53,7 @@ flowchart LR
 | Static analysis | `cppcheck`, `PVS-Studio`, `CodeChecker` |
 | Clang analysis | `clang-tidy`, `clang` Static Analyzer |
 | Documentation validation | `python3 scripts/lint-docs.py` |
-| Benchmark harness | `bash scripts/run-benchmarks.sh` |
+| Benchmark harness | `uv run --script scripts/benchmarks.py` |
 | Profiler entrypoint | `bash scripts/run-profiler-review.sh` |
 | Podman perf lane | `uv run --script scripts/podman_perf_lane.py ...` |
 | uftrace profiler build lane | `uv run --script scripts/build_uftrace_bench.py` |
@@ -154,7 +154,7 @@ Use these documents and scripts as the stable surface for the Sprint 09 and Spri
 | `docs/testing/BENCHMARK_METHODOLOGY.md` | normalized scenario catalog, artifact policy, and comparison rules |
 | `docs/testing/PROFILER_WORKFLOW.md` | profiler tool selection, artifact policy, and review rules |
 | `scripts/podman_perf_lane.py` | official Podman launch mode for `io_uring` and ptrace-sensitive profiler work |
-| `scripts/run-benchmarks.sh` | build and execute the repository benchmark binaries and emit raw TSV artifacts |
+| `scripts/benchmarks.py` | build and execute the repository benchmark binaries and emit raw TSV artifacts |
 | `scripts/build_uftrace_bench.py` | build the dedicated `clang-uftrace` benchmark binaries |
 | `scripts/run-profiler-review.sh` | run one profiler mode against one benchmark binary and scenario |
 

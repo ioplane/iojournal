@@ -98,7 +98,7 @@ Interpretation rules:
 Canonical entrypoint:
 
 ```bash
-bash scripts/run-benchmarks.sh
+uv run --script scripts/benchmarks.py
 ```
 
 Artifact validation requirements:

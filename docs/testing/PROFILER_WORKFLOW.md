@@ -48,7 +48,7 @@ Rules:
 Prepare the benchmark binaries first:
 
 ```bash
-PRESET=clang-perf bash scripts/run-benchmarks.sh
+PRESET=clang-perf uv run --script scripts/benchmarks.py
 uv run --script scripts/build_uftrace_bench.py
 ```
 

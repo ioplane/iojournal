@@ -53,7 +53,7 @@ flowchart LR
 | Статический анализ | `cppcheck`, `PVS-Studio`, `CodeChecker` |
 | Анализ Clang | `clang-tidy`, `clang` Static Analyzer |
 | Проверка документации | `python3 scripts/lint-docs.py` |
-| Набор benchmark-сценариев | `bash scripts/run-benchmarks.sh` |
+| Набор benchmark-сценариев | `uv run --script scripts/benchmarks.py` |
 | Точка входа в профилирование | `bash scripts/run-profiler-review.sh` |
 | Выделенный Podman perf-режим | `uv run --script scripts/podman_perf_lane.py ...` |
 | Сборка режима для `uftrace` | `uv run --script scripts/build_uftrace_bench.py` |
@@ -156,7 +156,7 @@ flowchart LR
 | `docs/testing/BENCHMARK_METHODOLOGY.md` | каталог нормализованных сценариев, политика артефактов и правила сравнения |
 | `docs/testing/PROFILER_WORKFLOW.md` | выбор инструментов профилирования, политика артефактов и правила разбора результатов |
 | `scripts/podman_perf_lane.py` | официальный режим запуска Podman для `io_uring` и профилирования, чувствительного к `ptrace` |
-| `scripts/run-benchmarks.sh` | сборка и запуск benchmark-binaries репозитория с выгрузкой raw TSV artifacts |
+| `scripts/benchmarks.py` | сборка и запуск benchmark-binaries репозитория с выгрузкой raw TSV artifacts |
 | `scripts/build_uftrace_bench.py` | сборка выделенных benchmark-binaries для `clang-uftrace` |
 | `scripts/run-profiler-review.sh` | запуск одного режима профилирования против одного benchmark-binary и scenario |
 
