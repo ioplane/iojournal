@@ -28,7 +28,7 @@ usage:
   scripts/run-profiler-review.sh <tool> [bench_name] [iterations] [scenario]
 
 For host-launched io_uring or ptrace-sensitive runs, invoke this script through:
-  bash scripts/run-podman-perf-lane.sh bash scripts/run-profiler-review.sh ...
+  uv run --script scripts/podman_perf_lane.py bash scripts/run-profiler-review.sh ...
 
 Notes:
   auto ignores bench_name and scenario, and always runs the canonical shared suite.
@@ -68,7 +68,7 @@ validate_iterations() {
 
 require_perf_lane() {
     if [[ "${PODMAN_PERF_LANE}" != "1" ]]; then
-        printf "this mode must run through scripts/run-podman-perf-lane.sh\n" >&2
+        printf "this mode must run through scripts/podman_perf_lane.py\n" >&2
         exit 2
     fi
 }
