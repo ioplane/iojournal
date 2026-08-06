@@ -6,23 +6,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
 
-# shellcheck source=lib/common.sh disable=SC1091
-if [[ -f /usr/local/lib/ioplane/common.sh ]]; then
-    source /usr/local/lib/ioplane/common.sh
-else
-    source "${SCRIPT_DIR}/lib/common.sh"
-fi
-
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd -P)"
 readonly ROOT_DIR
 
 RUNSTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 readonly RUNSTAMP
 
-HEAD_SHORT="$(ioj_git_head_short "${ROOT_DIR}")"
+HEAD_SHORT="$(git -C "${ROOT_DIR}" rev-parse --short HEAD 2>/dev/null || printf 'nogit')"
 readonly HEAD_SHORT
-
-ioj_git_safe_directory "${ROOT_DIR}"
 
 readonly RUN_ID="${RUNSTAMP}-${HEAD_SHORT}"
 readonly OUT_BASE="${ROOT_DIR}/dist/release-candidate"

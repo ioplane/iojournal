@@ -6,13 +6,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
 
-# shellcheck source=lib/common.sh disable=SC1091
-if [[ -f /usr/local/lib/ioplane/common.sh ]]; then
-    source /usr/local/lib/ioplane/common.sh
-else
-    source "${SCRIPT_DIR}/lib/common.sh"
-fi
-
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 readonly ROOT_DIR
 
@@ -30,7 +23,6 @@ rm -f \
     "${DIST_DIR}/RELEASE_NOTES.md"
 
 if git -C "${ROOT_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    ioj_git_safe_directory "${ROOT_DIR}"
     git -C "${ROOT_DIR}" archive \
         --format=tar.gz \
         --prefix="${ARCHIVE_PREFIX}/" \

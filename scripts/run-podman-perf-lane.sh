@@ -4,14 +4,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
-if [[ -f /usr/local/lib/ioplane/common.sh ]]; then
-    # shellcheck source=/dev/null
-    source /usr/local/lib/ioplane/common.sh
-else
-    # shellcheck source=lib/common.sh disable=SC1091
-    source "${SCRIPT_DIR}/lib/common.sh"
-fi
-
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 readonly ROOT_DIR
 readonly PODMAN_BIN="${PODMAN_BIN:-podman}"
