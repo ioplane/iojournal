@@ -27,4 +27,4 @@ jobs:
             -v "$PWD:/workspace" \
             -w /workspace \
             iojournal-dev:ci \
-            bash scripts/run-release-gate.sh
+            python scripts/release_gate.py
