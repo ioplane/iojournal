@@ -27,7 +27,7 @@ other ptrace-sensitive diagnostics. The default command is `bash`.
 
 Examples:
   uv run --script scripts/podman_perf_lane.py bash
-  uv run --script scripts/podman_perf_lane.py bash scripts/run-profiler-review.sh auto 3000
+  uv run --script scripts/podman_perf_lane.py uv run --script scripts/profiler_review.py auto 3000
 """
     )
 

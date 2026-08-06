@@ -101,7 +101,7 @@ podman run --rm -it -v $(pwd):/workspace:Z iojournal-dev:latest
 
 # Perf / io_uring / ptrace-sensitive lane
 uv run --script scripts/podman_perf_lane.py bash
-uv run --script scripts/podman_perf_lane.py bash scripts/run-profiler-review.sh auto 3000
+uv run --script scripts/podman_perf_lane.py uv run --script scripts/profiler_review.py auto 3000
 ```
 
 - All `io*` projects share `localhost/ioplane-base:latest` as the common toolchain layer.
@@ -130,9 +130,9 @@ cmake --build --preset clang-debug
 Then choose the tool that matches the question:
 
 ```bash
-uv run --script scripts/podman_perf_lane.py bash scripts/run-profiler-review.sh uftrace bench_hot_path 2000 medium_message_with_metadata
-uv run --script scripts/podman_perf_lane.py bash scripts/run-profiler-review.sh callgrind bench_file_sink 3000 append_ndjson
-uv run --script scripts/podman_perf_lane.py bash scripts/run-profiler-review.sh gdb bench_hot_path 1000 enabled_console
+uv run --script scripts/podman_perf_lane.py uv run --script scripts/profiler_review.py uftrace bench_hot_path 2000 medium_message_with_metadata
+uv run --script scripts/podman_perf_lane.py uv run --script scripts/profiler_review.py callgrind bench_file_sink 3000 append_ndjson
+uv run --script scripts/podman_perf_lane.py uv run --script scripts/profiler_review.py gdb bench_hot_path 1000 enabled_console
 ```
 
 `io_uring` experiments and ptrace-sensitive profiling must run through
