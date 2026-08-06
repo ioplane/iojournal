@@ -35,11 +35,11 @@ These files are the detailed execution plans for the `v0.1.0-rc.1` program.
 - For handoff, keep in the active sprint file: current status, evidence source-of-record IDs, next three priority commands, and open blockers.
 - For each completed sprint task, run mandatory checks before commit:
   - `python3 scripts/lint-docs.py`
-  - `podman run --rm --env-file /opt/projects/repositories/iohttpparser/.env -v $(pwd):/workspace:Z -w /workspace localhost/iojournal-dev:latest bash scripts/quality.sh`
+  - `podman run --rm --env-file /opt/projects/repositories/iohttpparser/.env -v $(pwd):/workspace:Z -w /workspace localhost/iojournal-dev:latest python scripts/quality.py`
 - For sprint changes that touch evidence or release gates, additionally run:
-  - `bash scripts/run-release-candidate.sh`
-  - `bash scripts/build-release-assets.sh v0.1.0-rc.1`
-  - `bash scripts/render-release-notes.sh`
+  - `uv run --script scripts/release_candidate.py`
+  - `uv run --script scripts/release_assets.py v0.1.0-rc.1`
+  - `uv run --script scripts/release_notes.py v0.1.0-rc.1`
 - Sprint 03 produces the RC API contract pack under `docs/api/`.
 - Sprint 04 produces the RC concurrency contract pack under `docs/architecture/` and `docs/testing/`.
 - Sprint 09 produces the benchmark and profiler methodology surface.

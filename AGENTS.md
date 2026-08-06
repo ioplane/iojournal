@@ -76,12 +76,12 @@ Mandatory handoff checks, in sequence:
 
 ```bash
 python3 scripts/lint-docs.py
-bash scripts/run-release-candidate.sh
-bash scripts/build-release-assets.sh v0.1.0-rc.1
-bash scripts/render-release-notes.sh
+uv run --script scripts/release_candidate.py
+uv run --script scripts/release_assets.py v0.1.0-rc.1
+uv run --script scripts/release_notes.py v0.1.0-rc.1
 podman run --rm --env-file /opt/projects/repositories/iohttpparser/.env \
   -v $(pwd):/workspace:Z -w /workspace \
-  localhost/iojournal-dev:latest bash scripts/quality.sh
+  localhost/iojournal-dev:latest python scripts/quality.py
 ```
 
 ## Dev Container
@@ -107,7 +107,7 @@ bash scripts/run-podman-perf-lane.sh bash scripts/run-profiler-review.sh auto 30
 - All `io*` projects share `localhost/ioplane-base:latest` as the common toolchain layer.
 - Use the dedicated perf lane for `io_uring`, `uftrace`, `gdb`, and other ptrace-sensitive runs.
 - The default `podman run` path stays authoritative for normal build, test, and analyzer work.
-- After each performance task, rerun the full `scripts/quality.sh` gate inside Podman.
+- After each performance task, rerun the full `python scripts/quality.py` gate inside Podman.
 
 ## Profiling Toolchain
 

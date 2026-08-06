@@ -24,7 +24,7 @@ stateDiagram-v2
 
 | Gate | Current Evidence | Status |
 | --- | --- | --- |
-| Local quality | `python3 scripts/lint-docs.py` `PASS`; `bash scripts/quality.sh` `PASS: 14`, `FAIL: 0`, `SKIP: 0` | `PASS` |
+| Local quality | `python3 scripts/lint-docs.py` `PASS`; `python scripts/quality.py` `PASS: 14`, `FAIL: 0`, `SKIP: 0` | `PASS` |
 | Functional comparison | Sprint 10 pack complete under [`docs/plans/comparison/`](/opt/projects/repositories/iojournal/docs/plans/comparison/) | `PASS` |
 | Optimization evidence | active benchmark [`20260316-210134`](/opt/projects/repositories/iojournal/docs/tmp/benchmarks/20260316-210134), active profiler pack [`20260316-210204`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210204), active `uftrace` companions [`20260316-210329`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210329), [`20260316-210345`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210345), [`20260316-210349`](/opt/projects/repositories/iojournal/docs/tmp/profiling/20260316-210349) | `PASS` |
 | Release candidate run | active local RC run [`20260316T212052Z-d52d88e`](/opt/projects/repositories/iojournal/dist/release-candidate/runs/20260316T212052Z-d52d88e/summary.md) from the post-11D workspace state | `PASS` |
@@ -42,8 +42,8 @@ stateDiagram-v2
 
 ## Required Actions Before Publish
 
-1. Re-run `bash scripts/run-release-candidate.sh` and refresh `dist/release-candidate` from the final post-11D state.
-2. Re-run `bash scripts/build-release-assets.sh v0.1.0-rc.1` and `bash scripts/render-release-notes.sh`.
+1. Re-run `uv run --script scripts/release_candidate.py` and refresh `dist/release-candidate` from the final post-11D state.
+2. Re-run `uv run --script scripts/release_assets.py v0.1.0-rc.1` and `uv run --script scripts/release_notes.py v0.1.0-rc.1`.
 3. Commit and push the final workspace state.
 4. Wait for the required GitHub workflow runs on the pushed revision and record their outcome.
 5. Update this document to `PUBLISH` only after every gate in [`05-release-candidate-checklist.md`](/opt/projects/repositories/iojournal/docs/en/05-release-candidate-checklist.md) is `PASS`.

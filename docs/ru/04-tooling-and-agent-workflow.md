@@ -57,7 +57,7 @@ flowchart LR
 | Точка входа в профилирование | `bash scripts/run-profiler-review.sh` |
 | Выделенный Podman perf-режим | `bash scripts/run-podman-perf-lane.sh ...` |
 | Сборка режима для `uftrace` | `bash scripts/build-uftrace-bench.sh` |
-| Репозиторная проверка | `bash scripts/quality.sh` |
+| Репозиторная проверка | `python scripts/quality.py` |
 
 ## Базовый набор инструментов Clang 22
 

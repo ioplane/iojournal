@@ -57,7 +57,7 @@ flowchart LR
 | Profiler entrypoint | `bash scripts/run-profiler-review.sh` |
 | Podman perf lane | `bash scripts/run-podman-perf-lane.sh ...` |
 | uftrace profiler build lane | `bash scripts/build-uftrace-bench.sh` |
-| Repository gate | `bash scripts/quality.sh` |
+| Repository gate | `python scripts/quality.py` |
 
 ## Clang 22 Tooling Baseline
 
