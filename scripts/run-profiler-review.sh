@@ -80,7 +80,7 @@ ensure_perf_build() {
 }
 
 ensure_uftrace_build() {
-    bash "${ROOT_DIR}/scripts/build-uftrace-bench.sh" >/dev/null
+    uv run --script "${ROOT_DIR}/scripts/build_uftrace_bench.py" >/dev/null
 }
 
 run_callgrind() {

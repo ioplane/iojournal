@@ -56,7 +56,7 @@ flowchart LR
 | Набор benchmark-сценариев | `bash scripts/run-benchmarks.sh` |
 | Точка входа в профилирование | `bash scripts/run-profiler-review.sh` |
 | Выделенный Podman perf-режим | `uv run --script scripts/podman_perf_lane.py ...` |
-| Сборка режима для `uftrace` | `bash scripts/build-uftrace-bench.sh` |
+| Сборка режима для `uftrace` | `uv run --script scripts/build_uftrace_bench.py` |
 | Репозиторная проверка | `python scripts/quality.py` |
 
 ## Базовый набор инструментов Clang 22
@@ -157,7 +157,7 @@ flowchart LR
 | `docs/testing/PROFILER_WORKFLOW.md` | выбор инструментов профилирования, политика артефактов и правила разбора результатов |
 | `scripts/podman_perf_lane.py` | официальный режим запуска Podman для `io_uring` и профилирования, чувствительного к `ptrace` |
 | `scripts/run-benchmarks.sh` | сборка и запуск benchmark-binaries репозитория с выгрузкой raw TSV artifacts |
-| `scripts/build-uftrace-bench.sh` | сборка выделенных benchmark-binaries для `clang-uftrace` |
+| `scripts/build_uftrace_bench.py` | сборка выделенных benchmark-binaries для `clang-uftrace` |
 | `scripts/run-profiler-review.sh` | запуск одного режима профилирования против одного benchmark-binary и scenario |
 
 Правила:

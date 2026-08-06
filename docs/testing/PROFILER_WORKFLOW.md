@@ -49,7 +49,7 @@ Prepare the benchmark binaries first:
 
 ```bash
 PRESET=clang-perf bash scripts/run-benchmarks.sh
-bash scripts/build-uftrace-bench.sh
+uv run --script scripts/build_uftrace_bench.py
 ```
 
 Then select one profiler mode:
