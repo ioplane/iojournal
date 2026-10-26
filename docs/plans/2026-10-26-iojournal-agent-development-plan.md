@@ -19,6 +19,18 @@ its old local workspace and workflow observations are dated evidence. GitHub che
 67430002209 (release-gate) and 67429999934 (coverage) report failure at this base revision;
 this audit did not diagnose or rerun them.
 
+## W0: image delivery entry (2026-10-26)
+
+Source `ae40947570c589263d762880c7bd9f6232a160bc`: release job
+`121827038980` / run `40395417869` and coverage job `121827037851` /
+run `40395417787` fail before tests while resolving
+`localhost/ioplane-base:latest`: `dial tcp [::1]:443: connect: connection refused`.
+The workflow and Containerfile are unchanged. Qualify an immutable project/base
+image and its actual CI pull/build path before product/release claims; a
+workstation-local tag is not an available hosted-runner input. Preserve
+NO-PUBLISH and unknown/skipped test results. Historical failed jobs exist,
+but their logs return HTTP 410; identical historical root cause is unverified.
+
 ## Next functional slice
 
 Resolve the existing PR #3 tranche and produce one exact-revision RC decision. Preserve
