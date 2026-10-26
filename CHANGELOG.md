@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 
-- Dated 2026-10-26 development plan with current source/PR boundaries, next functional slice, admission evidence and measured CI entry blockers.
+- Dated 2026-10-26 development plan with current source/PR boundaries, next functional slice, admission evidence, measured CI entry blockers and planned GitLab import handoff.
 - Sprint 11D plan `docs/plans/sprints/2026-03-16-sprint-11d-contract-preserving-fast-paths.md` and risk assessment `docs/superpowers/specs/2026-03-16-iojournal-next-optimization-risk-assessment.md` for the next contract-preserving optimization tranche before publication.
 - repository-local performance skill `iojournal-performance-optimization` plus updated agent metadata and instructions for the release-blocking perf workflow.
 - Sprint 11B plan `docs/plans/sprints/2026-03-16-sprint-11b-event-copy-and-allocation-optimization.md` and Sprint 12 publication plan `docs/plans/sprints/2026-03-16-sprint-12-final-rc-decision-and-publication.md`.

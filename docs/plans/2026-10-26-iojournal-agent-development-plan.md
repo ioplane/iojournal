@@ -55,6 +55,17 @@ integration requires a separate bounded consumer adapter and backpressure/redact
 source benchmarks alone do not establish application fit. ngtun is not a logging runtime
 dependency. OTLP, TLS syslog, new queue topology and spool persistence remain outside RC.
 
+## Planned GitLab handoff
+
+The owner plans import to `https://gitlab.infra4.dev/ioplane/network/iojournal`;
+import completion is unverified. This GitHub PR is a pre-import transferable
+patchset: retain its exact base/head and parent history. After the owner import,
+bind actual GitLab project ID, default SHA/refs and reviews, compare history,
+and read the post-import contribution contract. Future implementation uses the
+accepted GitLab destination after CI, registry, ACL and host-identity receipts;
+the GitHub publication rules below describe only pre-import delivery. This plan
+performs no import, group transfer, remote/config change or PR closure.
+
 ## Publication contract
 
 Retain `docs/plans/ROADMAP.md` as sequence of record. Sequence changes also update the
