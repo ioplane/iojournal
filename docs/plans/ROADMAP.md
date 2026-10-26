@@ -1,5 +1,7 @@
 # iojournal Roadmap To v0.1.0-rc.1
 
+Current execution/validation plan: [2026-10-26 iojournal agent development plan](2026-10-26-iojournal-agent-development-plan.md). Historical sequences and results below retain their original scope and dates.
+
 ## Goal
 
 Ship the first public release candidate of `iojournal` as a C23 structured logging library with:

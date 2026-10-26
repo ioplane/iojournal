@@ -1,5 +1,7 @@
 # iojournal Plans
 
+Current execution/validation plan: [2026-10-26 iojournal agent development plan](2026-10-26-iojournal-agent-development-plan.md). Historical sequences and results below retain their original scope and dates.
+
 This directory is the authoritative planning surface for `iojournal`.
 
 ## Files
